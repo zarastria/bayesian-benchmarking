@@ -1,0 +1,335 @@
+---
+title: "testing"
+author: "Allen Baumgardner-Zuzik"
+date: "March 8, 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE, echo=FALSE}
+library(tidyverse)
+library(brms)
+#library(magrittr)
+library(knitr)
+library(broom)
+library(broom.mixed)
+library(xtable)
+library(sjPlot)
+#library(texreg)
+#library(kableExtra)
+library(tidymodels)
+library(estimatr)
+library(Hmisc)
+library(vip)
+library(car)
+library(sandwich)
+
+#install.packages("remotes")
+#remotes::install_github("mclark--/lazerhawk")
+#remotes::install_github('m-clark/mixedup')
+```
+
+Run this first for the create_data function
+
+```{r}
+create_data <- function(N = 1000, ng = 100, seed = 1234) {
+  set.seed(seed)
+  
+  # the model matrix
+  X_mm = cbind(
+    # a standard binary
+    binary_1 = sample(0:1, N, replace = TRUE),
+    # a relatively rare categorical
+    binary_2 = sample(0:1, N, replace = TRUE, prob = c(.05, .95)),
+    # two partly collinear numeric
+    mvtnorm::rmvnorm(N, mean = rep(0,3), sigma = lazerhawk::create_corr(runif(3, max = 0.6)))
+  )
+  
+   X_mm = cbind(
+    # intercept
+    1,
+    X_mm,
+    # a cubic effect
+    scale(poly(X_mm[,5], 3))[,2:3],
+    # interaction of binary variables
+    X_mm[,1]*X_mm[,2], 
+    # interaction of binary 2 with numeric 1
+    X_mm[,2]*X_mm[,3]
+  )
+   
+   # add names
+  colnames(X_mm) = c(
+    'Intercept',
+    'b1',
+    'b2',
+    'x1',
+    'x2',
+    'x3',
+    'x3_sq',
+    'x3_cub',
+    'b1_b2',
+    'b2_x1'
+  )
+  
+  # coefficients
+  beta = c(
+    3.0,   # intercept
+     .3,   # b1
+    -.3,   # b2
+     .5,   # x1
+     .0,   # x2
+     .3 ,  # x3 
+     .3,   # x3_sq
+    -.2,   # x3_cub
+     .5,   # b1_b2 
+    -.5    # b2_x1
+  )
+  
+  # create target variable/linear predictor
+  y = X_mm %*% beta
+  
+  # add random effect
+  groups = sort(sample(1:ng, N, replace = T))
+  
+  # random effect sd = .5
+  re = rnorm(ng, sd = .5)[groups]  
+  
+  # add re and residual noise with sd = 1
+  y = y + re + rnorm(N)
+  y = cbind(y, groups)
+  colnames(y) = c('y', 'group')
+  
+  as_tibble(cbind(X_mm, y))
+}
+```
+
+
+
+```{r}
+# create the primary data frame
+
+main_df = 
+  create_data(N = 1000) %>% 
+  as_tibble() %>% 
+  select(group, b1:x3, y) %>% 
+  mutate(
+    b1 = factor(b1),   # will help with visuals
+    b2 = factor(b2)
+  )
+```
+
+
+
+
+```{r}
+library(brms)
+
+# essentially the same as the defaults
+pr_uniform = prior(uniform(-100, 100), lb = -100, ub = 100, 'b')
+
+model_default_prior = brm(
+  y ~ b1 + b2 + x1 + x2 + x3, 
+  data = main_df,
+  iter = 1000,
+  sample_prior = 'only',
+  prior = pr_uniform
+)
+
+# pp_check(model_default_prior, nsamples = 50)
+
+# diffuse normal for reg coefficients 'b'
+pr_norm_b_0_10 = prior(normal(0, 10), 'b')
+
+model_0_norm_b_0_10 = brm(
+  y ~ b1 + b2 + x1 + x2 + x3, 
+  data = main_df,
+  iter = 1000,
+  sample_prior = 'only',
+  prior = pr_norm_b_0_10
+)
+
+# pp_check(model_0_norm_b_0_10, nsamples = 50)
+
+# rstanarm-like prior
+pr_auto = sjstats::auto_prior(
+  y ~ b1 + b2 + x1 + x2 + x3,
+  data = main_df,
+  gaussian = TRUE
+)
+
+model_auto_prior = brm(
+  y ~ b1 + b2 + x1 + x2 + x3, 
+  data = main_df,
+  iter = 1000,
+  sample_prior = 'only',
+  prior = pr_auto
+)
+
+# pp_check(model_auto_prior, nsamples = 50)
+
+# Since we have standardized data, Normal(0, 1) is reasonable for reg coefs
+pr_norm_b_0_1 = prior(normal(0, 1), 'b')
+
+model_0_norm_b_0_1 = brm(
+  y ~ b1 + b2 + x1 + x2 + x3, 
+  data = main_df,
+  iter = 1000,
+  sample_prior = 'only',
+  prior = pr_norm_b_0_1
+)
+
+# pp_check(model_0_norm_b_0_1, nsamples = 50)
+
+# Now we add one for the intercept based on the mean of y
+pr_norm_b_norm_int = c(
+  prior(normal(0, 1), class = 'b'),
+  prior(normal(3, 1), class = 'Intercept')
+)
+
+model_0_norm_b_0_1_norm_Int = brm(
+  y ~ b1 + b2 + x1 + x2 + x3, 
+  data = main_df,
+  iter = 1000,
+  sample_prior = 'only',
+  prior = pr_norm_b_norm_int
+)
+
+# pp_check(model_0_norm_b_0_1_norm_Int, nsamples = 50)
+
+# Now add a prior for sigma based on the sd of y
+pr_norm_b_norm_int_t_sigma = c(
+  prior(normal(0, 1), class = 'b'),
+  prior(normal(3, 1), class = 'Intercept'),
+  prior(student_t(10, 1, 1), class = 'sigma') # first value is deg of freedom
+)
+
+model_0_norm_b_0_1_norm_Int_sigma = brm(
+  y ~ b1 + b2 + x1 + x2 + x3, 
+  data = main_df,
+  iter = 1000,
+  sample_prior = 'only',
+  prior = pr_norm_b_norm_int_t_sigma
+)
+
+# pp_check(model_0_norm_b_0_1_norm_Int_sigma, nsamples = 50)
+```
+
+
+
+
+
+
+
+```{r}
+dat = create_data(N = 10000)
+mod = lme4::lmer(y ~ . -group + (1|group), data.frame(dat[,-1]))
+mixedup::summarise_model(mod, ci = FALSE)  # or just summary(mod)
+```
+
+```{r}
+# create the primary data frame
+
+main_df = 
+  create_data(N = 1000) %>% 
+  as_tibble() %>% 
+  select(group, b1:x3, y) %>% 
+  mutate(
+    b1 = factor(b1),   # will help with visuals
+    b2 = factor(b2)
+  )
+
+main_df
+```
+
+```{r}
+# no priors, no complexity, all default settings, few iterations
+library(brms)
+
+model_start_100 = brm(
+  y ~ b1 + b2 + x1 + x2 + x3, 
+  data = main_df,
+  iter = 100,
+  verbose = F,
+  seed = 123
+)
+```
+
+```{r}
+summary(model_start_100)
+mcmc_plot(model_start_100, pars = c('b1', 'b2', 'x1'), type = 'combo')
+mcmc_plot(model_start_100, pars = c('b1', 'b2', 'x1'), type = 'areas')
+```
+
+
+
+
+```{r}
+tibble(a = 0,
+       b = c(1, 1.5, 2, 3, 9)) %>% 
+  mutate(prob = 1 / (b - a))
+```
+
+```{r}
+tibble(a = 0,
+       b = c(1, 1.5, 2, 3, 9)) %>% 
+  expand(nesting(a, b)) %>% 
+
+tibble(a = 0,
+       b = c(1, 1.5, 2, 3, 9)) %>% 
+  expand(nesting(a, b), parameter_space = seq(from = 0, to = 9, length.out = 500)) %>% 
+  mutate(prob = dunif(parameter_space, a, b),
+         b = str_c("b = ", b)) %>% 
+  
+  ggplot(aes(x = parameter_space, ymin = 0, ymax = prob)) +
+  geom_ribbon() +
+  scale_x_continuous(breaks = c(0, 1:3, 9)) +
+  scale_y_continuous(breaks = c(0, 1/9, 1/3, 1/2, 2/3, 1),
+                     labels = c("0", "1/9", "1/3", "1/2", "2/3", "1")) +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_blank()) +
+  facet_wrap(~b, ncol = 5)
+```
+
+
+
+```{r}
+fruits <- tibble(
+  type   = c("apple", "orange", "apple", "orange", "orange", "orange"),
+  year   = c(2010, 2010, 2012, 2010, 2010, 2012),
+  size  =  factor(
+    c("XS", "S",  "M", "S", "S", "M"),
+    levels = c("XS", "S", "M", "L")),
+  weights = rnorm(6, as.numeric(size) + 2))
+
+# All possible combinations ---------------------------------------
+# factor variable `size` are retained.
+fruits %>% expand(type)
+fruits %>% expand(type, size)
+fruits %>% expand(type, size, year)
+
+# Only combinations that already appear in the data ---------------
+fruits %>% expand(nesting(type))
+fruits %>% expand(nesting(type, size))
+fruits %>% expand(nesting(type, size, year))
+
+# Other uses -------------------------------------------------------
+# Use with `full_seq()` to fill in values of continuous variables
+fruits %>% expand(type, size, full_seq(year, 1))
+fruits %>% expand(type, size, 2010:2012)
+
+# Use `anti_join()` to determine which observations are missing
+all <- fruits %>% expand(type, size, year)
+all
+all %>% dplyr::anti_join(fruits)
+
+# Use with `right_join()` to fill in missing rows
+fruits %>% dplyr::right_join(all)
+
+```
+
+
+
+

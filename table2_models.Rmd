@@ -1,0 +1,938 @@
+---
+title: "Benchmarking Model 2"
+author: "Allen Baumgardner-Zuzik"
+date: "February 1, 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Performas a Bayesian calculation with uninformed priors to estimate model 2 of <paper>
+
+$$ Y_{icb2} = \alpha_{b} + \delta^{T} T_{c} + \delta^{GK} T^{GK}_c + \beta X_{icb1} + \rho Y_{icb1} +\gamma_{1} \tau_{c} +\epsilon_{icb2} $$
+
+### Warning
+
+## Setup
+
+### the needful
+
+Load the relavent packages
+
+```{r, include=FALSE, echo=FALSE}
+library(tidyverse)
+library(parallel)
+library(brms)
+#library(magrittr)
+library(knitr)
+library(broom)
+library(broom.mixed)
+library(tidybayes)
+library(bayesplot)
+library(bayestestR)
+library(xtable)
+library(sjPlot)
+#library(texreg)
+#library(kableExtra)
+library(tidymodels)
+library(estimatr)
+library(Hmisc)
+library(vip)
+library(car)
+library(sandwich)
+```
+
+Set global core settings, if applicable. Use global setting only if necessary, best to use as an inline setting to avoid overallocating system resources
+```{r, include=FALSE}
+# # parallel package is needed for eh detectCores() and mclapply() function
+# numCores <- detectCores()
+# mc.cores = numCores 
+```
+
+
+### build the main dataset
+
+Load the datasets
+
+```{r, include=FALSE, echo=FALSE}
+gik_hh_data <- as_tibble(read_csv("gik_household_panel.csv"))
+# gik_ind_data <- as_tibble(read_csv("gik_ind_panel.csv"))
+```
+
+Merge into main dataset with intervention costs. The variables of interest are:
+
+* `cost_per_beneficiary` - Cost per beneficiary to USAID in USD
+* `overhead_cost_fraction` - Fraction of cost that is overhead
+* `value_received` - Value received by beneficiary households in USD
+* `spending_not_averted_fraction` - Fraction spending not averted if household not treated
+* `cost_per_household` - Cost to USAID per eligible household
+* `cost_per_village_household` - Cost to USAID per household in village
+
+Merge into main dataset withcompliance rates. The variables of interest are as follows:
+
+* `compliance_rate` - Compliance Rate among eligables
+* `compliance_rate_population` - Compliance rate in population
+
+```{r, include=FALSE, echo=FALSE}
+gik_hh_main <- gik_hh_data %>%
+  left_join(as_tibble(read_csv("intervention_costs.csv"))) %>%
+  filter(eligible == "eligible", round == 2) %>%
+  mutate(cost_deviation = (cost_per_beneficiary - 141.84)) %>% # create the cost-benefit differential per beneficary variable
+  mutate(cost_deviation = replace_na(cost_deviation, 0))
+
+# # The code below was used for validation purposes and is no longer applicable
+# check <- gik_hh_main %>%
+#   select(hhid, round, vid, m0_district, block, eligible, samp_wgt, 
+#          treat_any, gd_treat, treatment, treat_GK, treated_GK, treat_GD_huge, treat_GD_main,
+#          transferamount, cost_per_household, cost_per_beneficiary, value_received) %>%
+#   filter(eligible == "eligible", round == 2) %>%
+#   mutate(cost_deviation = (cost_per_beneficiary - 141.84)) %>% # create the cost-benefit differential per beneficary variable
+#   mutate(cost_deviation = replace_na(cost_deviation, 0))
+# 
+# check %>%
+#   summarise(itt_sum = sum(treat_GK, na.rm=TRUE), t_sum = sum(treated_GK),
+#             itt_mean = mean(treat_GK, na.rm=TRUE), t_mean = mean(treated_GK))
+# 
+# view(check)
+```
+
+## The models - table 2
+
+These models build out table 2 which presents the results for the primary and secondary outcomes utilizing uninformed priors utiling default brm values.
+
+### Per Capita Monthly Consumption - Primary Outcome
+
+Load the Monlthy per capita consumption model variables
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+per_cap_consumption_data <- gik_hh_main %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         consumption_asinh, # Outcome variable
+         consumption_asinh_R1, # Baseline value of consumption_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
+# view(per_cap_consumption_data)
+```
+
+
+**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
+
+```{r, include=FALSE, echo=FALSE}
+per_cap_consumption_Bayesmodel <-
+  brm(formula = consumption_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        (1 | block) + (1 | vid),
+     data = per_cap_consumption_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 2,
+     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
+     cores = getOption("mc.cores", 1), #default set to 1 core
+     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_per_cap_consumption_Bayesmodel <- tidy(per_cap_consumption_Bayesmodel)
+#view(tidy_per_cap_consumption_Bayesmodel)
+write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_bayes.csv")
+```
+
+Model Summery
+```{r}
+summary(per_cap_consumption_Bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(per_cap_consumption_Bayesmodel)
+check_prior(per_cap_consumption_Bayesmodel)
+```
+
+Diagnostics
+```{r}
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "trace")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "dens")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "acf")
+
+mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "areas") # need to work on this one
+
+mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+
+# # combo is a good one but need to select specific variables using the pars command
+# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
+# 
+# # additional plots for diagnostics
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
+# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+```
+
+posterior predictive checks
+```{r}
+pp_check(per_cap_consumption_Bayesmodel, nsamples = 100)
+pp_check(per_cap_consumption_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+```
+
+
+
+### Dietary Diversity - Primary Outcome
+
+Load the *Dietary Diversity* variables
+
+```{r, include=FALSE}
+dietary_diversity_data <- gik_hh_main %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         dietarydiversity, # Outcome variable - Household dietary diversity score
+         dietarydiversity_R1, # Baseline value of dietarydiversity, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, Lsavingsstock_asinh3, # controls
+         Lconsumpti_x_Ldietarydi, Lconsumpti_x_Lproductiv, Ldietarydi_x_Lassetscon) # control interactions
+```
+
+**Dietary Diversity:** This is the basic bechmarking model utilzing the default, uninformed priors
+
+```{r, include=FALSE}
+dietary_diversity_Bayesmodel <- 
+  brm(formula = dietarydiversity | weights(samp_wgt) ~ 
+        cost_deviation + treat_any + treat_GK + 
+        dietarydiversity_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lsavingsstock_asinh3 + 
+        Lconsumpti_x_Ldietarydi + Lconsumpti_x_Lproductiv + Ldietarydi_x_Lassetscon + 
+        (1 | vid) + (1 | block),
+     data = dietary_diversity_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
+     control = list(max_treedepth = 11),
+     cores = getOption("mc.cores", 1),
+     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+```
+
+```{r}
+tidy_dietary_diversity_Bayesmodel <- tidy(dietary_diversity_Bayesmodel)
+view(tidy_dietary_diversity_Bayesmodel)
+write_csv(tidy_dietary_diversity_Bayesmodel, "uninformed_prior_outcomes\\dietary_diversity_bayes.csv")
+```
+
+Model Summary
+```{r}
+summary(dietary_diversity_Bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(dietary_diversity_Bayesmodel)
+check_prior(dietary_diversity_Bayesmodel)
+```
+
+Diagnostics
+```{r}
+mcmc_plot(dietary_diversity_Bayesmodel, type = "trace")
+mcmc_plot(dietary_diversity_Bayesmodel, type = "dens")
+mcmc_plot(dietary_diversity_Bayesmodel, type = "acf")
+mcmc_plot(dietary_diversity_Bayesmodel, type = "areas") # need to work on this one
+```
+
+posterior predictive checks
+```{r}
+pp_check(dietary_diversity_Bayesmodel, nsamples = 100)
+pp_check(dietary_diversity_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+```
+
+
+
+### Total Household Wealth - Primary Outcome
+
+Load the **total household wealth** model variables
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+hh_wealth_data <- gik_hh_main %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         wealth_asinh, # Outcome variable
+         wealth_asinh_R1, # Baseline value of wealth_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, Lowndwelling) # controls
+# view(per_cap_consumption_data)
+```
+
+
+**total household wealth**: This is the basic bechmarking model utilzing `brm()` default, uninformed priors
+
+```{r, include=FALSE, echo=FALSE}
+hh_wealth_Bayesmodel <-
+  brm(formula = wealth_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        wealth_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lowndwelling +
+        (1 | block) + (1 | vid),
+     data = hh_wealth_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 2,
+     #control = list(adapt_delta = .95, max_treedepth = 15), #this is overkill and computationally intensive
+     cores = getOption("mc.cores", 1), #default set to 1 core
+     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_hh_wealth_Bayesmodel <- tidy(hh_wealth_Bayesmodel)
+#view(tidy_hh_wealth_Bayesmodel)
+write_csv(tidy_hh_wealth_Bayesmodel, "uninformed_prior_outcomes\\hh_wealth_Bayesmodel.csv")
+```
+
+Model Summery
+```{r}
+summary(hh_wealth_Bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(hh_wealth_Bayesmodel)
+check_prior(hh_wealth_Bayesmodel)
+```
+
+Diagnostics
+```{r}
+mcmc_plot(hh_wealth_Bayesmodel, type = "trace")
+mcmc_plot(hh_wealth_Bayesmodel, type = "dens")
+mcmc_plot(hh_wealth_Bayesmodel, type = "acf")
+mcmc_plot(hh_wealth_Bayesmodel, type = "areas") # need to work on this one
+
+mcmc_plot(hh_wealth_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+
+# # combo is a good one but need to select specific variables using the pars command
+# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
+# 
+# # additional plots for diagnostics
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
+# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+```
+
+posterior predictive checks
+```{r}
+pp_check(hh_wealth_Bayesmodel, nsamples = 100)
+pp_check(hh_wealth_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+```
+
+
+### Borrowing Stock - Secondary Outcome
+
+Load the **borrowing stock** model variables
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+borrowing_stock_data <- gik_hh_main %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         borrowingstock_asinh, # Outcome variable
+         borrowingstock_asinh_R1, # Baseline value of borrowingstock_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
+# view(per_cap_consumption_data)
+```
+
+
+**borrowing stock**: This is the basic bechmarking model utilzing `brm()` default uninformed priors
+
+```{r, include=FALSE, echo=FALSE}
+borrowing_stock_bayesmodel <-
+  brm(formula = borrowingstock_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        borrowingstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        (1 | block) + (1 | vid),
+     data = borrowing_stock_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 2,
+     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
+     cores = getOption("mc.cores", 1), #default set to 1 core
+     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_borrowing_stock_bayesmodel <- tidy(borrowing_stock_bayesmodel)
+#view(borrowing_stock_bayesmodel)
+write_csv(tidy_borrowing_stock_bayesmodel, "uninformed_prior_outcomes\\borrowing_stock_bayes.csv")
+```
+
+Model Summery
+```{r}
+summary(borrowing_stock_bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(borrowing_stock_bayesmodel)
+check_prior(borrowing_stock_bayesmodel)
+```
+
+Diagnostics
+```{r}
+mcmc_plot(borrowing_stock_bayesmodel, type = "trace")
+mcmc_plot(borrowing_stock_bayesmodel, type = "dens")
+mcmc_plot(borrowing_stock_bayesmodel, type = "acf")
+mcmc_plot(borrowing_stock_bayesmodel, type = "areas") # need to work on this one
+
+mcmc_plot(borrowing_stock_bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+```
+
+posterior predictive checks
+```{r}
+pp_check(borrowing_stock_bayesmodel, nsamples = 100)
+pp_check(borrowing_stock_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+```
+
+
+### Savings Stock - Secondary Outcome
+
+
+Load the **savings stock** model variables
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+savings_stock_data <- gik_hh_main %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         savingsstock_asinh, # Outcome variable
+         savingsstock_asinh_R1, # Baseline value of savingsstock_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, # controls
+         Lconsumpti_x_Lproductiv, Lconsumpti_x_Lassetscon) # interactions
+# view(per_cap_consumption_data)
+```
+
+
+**savings stock**: This is the basic bechmarking model utilzing `brm()` default uninformed priors
+
+```{r, include=FALSE, echo=FALSE}
+savings_stock_bayesmodel <-
+  brm(formula = savingsstock_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        savingsstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + 
+        Lconsumpti_x_Lproductiv + Lconsumpti_x_Lassetscon +
+        (1 | block) + (1 | vid),
+     data = savings_stock_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 2,
+     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
+     cores = getOption("mc.cores", 1), #default set to 1 core
+     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_savings_stock_bayesmodel <- tidy(savings_stock_bayesmodel)
+#view(tidy_savings_stock_bayesmodel)
+write_csv(tidy_savings_stock_bayesmodel, "uninformed_prior_outcomes\\savings_stock_bayes.csv")
+```
+
+Model Summery
+```{r}
+summary(savings_stock_bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(savings_stock_bayesmodel)
+check_prior(savings_stock_bayesmodel)
+```
+
+Diagnostics
+```{r}
+mcmc_plot(savings_stock_bayesmodel, type = "trace")
+mcmc_plot(savings_stock_bayesmodel, type = "dens")
+mcmc_plot(savings_stock_bayesmodel, type = "acf")
+mcmc_plot(savings_stock_bayesmodel, type = "areas") # need to work on this one
+
+mcmc_plot(savings_stock_bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+```
+
+posterior predictive checks
+```{r}
+pp_check(savings_stock_bayesmodel, nsamples = 100)
+pp_check(savings_stock_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+```
+
+
+### Health Knowledge - Secondary Outcome
+
+
+Load the **health knowledge** model variables
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+health_knowledge_data <- gik_hh_main %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         health_knowledge, # Outcome variable
+         health_knowledge_R1, # Baseline value of health_knowledge, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
+# view(per_cap_consumption_data)
+```
+
+
+**health knowledge**: This is the basic bechmarking model utilzing `brm()` default uninformed priors
+
+```{r, include=FALSE, echo=FALSE}
+health_knowledge_bayesmodel <-
+  brm(formula = health_knowledge | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        health_knowledge_R1 + 
+        Lhh_wealth_asinh + Lvill_eligible_ratio +
+        (1 | block) + (1 | vid),
+     data = health_knowledge_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 2,
+     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
+     cores = getOption("mc.cores", 1), #default set to 1 core
+     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_health_knowledge_bayesmodel <- tidy(health_knowledge_bayesmodel)
+#view(tidy_health_knowledge_bayesmodel)
+write_csv(tidy_health_knowledge_bayesmodel, "uninformed_prior_outcomes\\health_knowledge_bayes.csv")
+```
+
+Model Summery
+```{r}
+summary(health_knowledge_bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(health_knowledge_bayesmodel)
+check_prior(health_knowledge_bayesmodel)
+```
+
+Diagnostics
+```{r}
+mcmc_plot(health_knowledge_bayesmodel, type = "trace")
+mcmc_plot(health_knowledge_bayesmodel, type = "dens")
+mcmc_plot(health_knowledge_bayesmodel, type = "acf")
+mcmc_plot(health_knowledge_bayesmodel, type = "areas") # need to work on this one
+
+mcmc_plot(health_knowledge_bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+```
+
+posterior predictive checks
+```{r}
+pp_check(health_knowledge_bayesmodel, nsamples = 100)
+pp_check(health_knowledge_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+```
+
+
+### Sanitation Practices - Secondary Outcome
+
+
+Load the **sanitation practices** model variables
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+per_cap_consumption_data <- gik_hh_main %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         consumption_asinh, # Outcome variable
+         consumption_asinh_R1, # Baseline value of consumption_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
+# view(per_cap_consumption_data)
+```
+
+
+**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
+
+```{r, include=FALSE, echo=FALSE}
+per_cap_consumption_Bayesmodel <-
+  brm(formula = consumption_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        (1 | block) + (1 | vid),
+     data = per_cap_consumption_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 2,
+     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
+     cores = getOption("mc.cores", 1), #default set to 1 core
+     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_per_cap_consumption_Bayesmodel <- tidy(per_cap_consumption_Bayesmodel)
+#view(tidy_per_cap_consumption_Bayesmodel)
+write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_bayes.csv")
+```
+
+Model Summery
+```{r}
+summary(per_cap_consumption_Bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(per_cap_consumption_Bayesmodel)
+check_prior(per_cap_consumption_Bayesmodel)
+```
+
+Diagnostics
+```{r}
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "trace")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "dens")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "acf")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "areas") # need to work on this one
+
+mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+
+# # combo is a good one but need to select specific variables using the pars command
+# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
+# 
+# # additional plots for diagnostics
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
+# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+```
+
+posterior predictive checks
+```{r}
+pp_check(per_cap_consumption_Bayesmodel, nsamples = 100)
+pp_check(per_cap_consumption_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+```
+
+
+### Productive Assets - Secondary Outcome
+
+Load the **productive assets** model variables
+
+
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+per_cap_consumption_data <- gik_hh_main %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         consumption_asinh, # Outcome variable
+         consumption_asinh_R1, # Baseline value of consumption_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
+# view(per_cap_consumption_data)
+```
+
+
+**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
+
+```{r, include=FALSE, echo=FALSE}
+per_cap_consumption_Bayesmodel <-
+  brm(formula = consumption_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        (1 | block) + (1 | vid),
+     data = per_cap_consumption_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 2,
+     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
+     cores = getOption("mc.cores", 1), #default set to 1 core
+     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_per_cap_consumption_Bayesmodel <- tidy(per_cap_consumption_Bayesmodel)
+#view(tidy_per_cap_consumption_Bayesmodel)
+write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_bayes.csv")
+```
+
+Model Summery
+```{r}
+summary(per_cap_consumption_Bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(per_cap_consumption_Bayesmodel)
+check_prior(per_cap_consumption_Bayesmodel)
+```
+
+Diagnostics
+```{r}
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "trace")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "dens")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "acf")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "areas") # need to work on this one
+
+mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+
+# # combo is a good one but need to select specific variables using the pars command
+# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
+# 
+# # additional plots for diagnostics
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
+# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+```
+
+posterior predictive checks
+```{r}
+pp_check(per_cap_consumption_Bayesmodel, nsamples = 100)
+pp_check(per_cap_consumption_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+```
+
+
+### Consumptions Assets - Secondary Outcome
+
+Load the **consumption assets** model variables
+
+
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+per_cap_consumption_data <- gik_hh_main %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         consumption_asinh, # Outcome variable
+         consumption_asinh_R1, # Baseline value of consumption_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
+# view(per_cap_consumption_data)
+```
+
+
+**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
+
+```{r, include=FALSE, echo=FALSE}
+per_cap_consumption_Bayesmodel <-
+  brm(formula = consumption_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        (1 | block) + (1 | vid),
+     data = per_cap_consumption_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 2,
+     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
+     cores = getOption("mc.cores", 1), #default set to 1 core
+     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_per_cap_consumption_Bayesmodel <- tidy(per_cap_consumption_Bayesmodel)
+#view(tidy_per_cap_consumption_Bayesmodel)
+write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_bayes.csv")
+```
+
+Model Summery
+```{r}
+summary(per_cap_consumption_Bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(per_cap_consumption_Bayesmodel)
+check_prior(per_cap_consumption_Bayesmodel)
+```
+
+Diagnostics
+```{r}
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "trace")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "dens")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "acf")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "areas") # need to work on this one
+
+mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+
+# # combo is a good one but need to select specific variables using the pars command
+# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
+# 
+# # additional plots for diagnostics
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
+# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+```
+
+posterior predictive checks
+```{r}
+pp_check(per_cap_consumption_Bayesmodel, nsamples = 100)
+pp_check(per_cap_consumption_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+```
+
+
+### House Value - Secondary Outcome
+
+Load the **house value** model variables
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+per_cap_consumption_data <- gik_hh_main %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         consumption_asinh, # Outcome variable
+         consumption_asinh_R1, # Baseline value of consumption_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
+# view(per_cap_consumption_data)
+```
+
+
+**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
+
+```{r, include=FALSE, echo=FALSE}
+per_cap_consumption_Bayesmodel <-
+  brm(formula = consumption_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        (1 | block) + (1 | vid),
+     data = per_cap_consumption_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 2,
+     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
+     cores = getOption("mc.cores", 1), #default set to 1 core
+     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_per_cap_consumption_Bayesmodel <- tidy(per_cap_consumption_Bayesmodel)
+#view(tidy_per_cap_consumption_Bayesmodel)
+write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_bayes.csv")
+```
+
+Model Summery
+```{r}
+summary(per_cap_consumption_Bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(per_cap_consumption_Bayesmodel)
+check_prior(per_cap_consumption_Bayesmodel)
+```
+
+Diagnostics
+```{r}
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "trace")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "dens")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "acf")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "areas") # need to work on this one
+
+mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+
+# # combo is a good one but need to select specific variables using the pars command
+# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
+# 
+# # additional plots for diagnostics
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
+# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+```
+
+posterior predictive checks
+```{r}
+pp_check(per_cap_consumption_Bayesmodel, nsamples = 100)
+pp_check(per_cap_consumption_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+```
+
+
+### House Quality - Secondary Outcome
+
+Load the **house quality** model variables
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+per_cap_consumption_data <- gik_hh_main %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         consumption_asinh, # Outcome variable
+         consumption_asinh_R1, # Baseline value of consumption_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
+# view(per_cap_consumption_data)
+```
+
+
+**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
+
+```{r, include=FALSE, echo=FALSE}
+per_cap_consumption_Bayesmodel <-
+  brm(formula = consumption_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        (1 | block) + (1 | vid),
+     data = per_cap_consumption_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 2,
+     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
+     cores = getOption("mc.cores", 1), #default set to 1 core
+     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_per_cap_consumption_Bayesmodel <- tidy(per_cap_consumption_Bayesmodel)
+#view(tidy_per_cap_consumption_Bayesmodel)
+write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_bayes.csv")
+```
+
+Model Summery
+```{r}
+summary(per_cap_consumption_Bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(per_cap_consumption_Bayesmodel)
+check_prior(per_cap_consumption_Bayesmodel)
+```
+
+Diagnostics
+```{r}
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "trace")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "dens")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "acf")
+mcmc_plot(per_cap_consumption_Bayesmodel, type = "areas") # need to work on this one
+
+mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+
+# # combo is a good one but need to select specific variables using the pars command
+# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
+# 
+# # additional plots for diagnostics
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
+# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
+# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+```
+
+posterior predictive checks
+```{r}
+pp_check(per_cap_consumption_Bayesmodel, nsamples = 100)
+pp_check(per_cap_consumption_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+```
+
+

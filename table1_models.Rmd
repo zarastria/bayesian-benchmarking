@@ -1,0 +1,1304 @@
+---
+title: "Benchmarking Model 1 - Regressions"
+author: "Allen Baumgardner-Zuzik"
+date: "January 18, 2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introuction
+This markdown file contains the code to replicate Table 5, Panel A: Household-level Outcomes of Craig McIntosh and Andrew Zeitlin's paper. There are two types of regressions: a frequentist replication of outcomes and a series of Bayesian models attempting to validate the frequentist results utilizing an alternative method. There are 4 Bayesian models:
+
+Model 1: This model only utilizes blocks as a factor variable in a non-hierarchical bayesian model
+Model 2: incorporates block and villiage id as factor variables in a non-hierarchical bayesian model
+Model 3: Uses block as a factor variable and designates villiage id as a cluster-level variables in a hierarchical bayesian model
+Model4: both block and village id are designated as cluster-level variables in a hierarchical bayesian model
+
+
+## WARNING 
+
+NOTE: Do not run this file in its entirity. The blocks below contain bayesian regression models that will take hours to complete. Run this file in separate blocks.
+
+# Setup
+
+Load the relavent packages
+
+```{r, include=FALSE, echo=FALSE}
+library(tidyverse)
+library(brms)
+#library(magrittr)
+library(knitr)
+library(broom)
+library(broom.mixed)
+library(xtable)
+library(sjPlot)
+#library(texreg)
+#library(kableExtra)
+library(tidymodels)
+library(estimatr)
+library(Hmisc)
+library(vip)
+library(car)
+library(sandwich)
+```
+
+Load the datasets
+
+```{r, include=FALSE, echo=FALSE}
+
+gik_hh_data <- as_tibble(read_csv("gik_household_panel.csv"))
+# gik_ind_data <- as_tibble(read_csv("gik_ind_panel.csv"))
+
+```
+
+Set global core settings, if applicable. Use global setting only if necessary, best to use as an inline setting to avoid overapplying system resources
+```{r, include=FALSE}
+##library(parallel) # parallel package is needed for eh detectCores() and mclapply() function
+#numCores <- detectCores()
+#mc.cores = numCores 
+```
+
+
+
+# Bayesian Regressions
+
+# Section 5: Bayesian and Frequentist models
+
+## Per Capita Monthly Consumption - Primary Outcome
+
+Load the Monlthy Consumption model variables
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+per_cap_consumption_data <- gik_hh_data %>%
+  select(hhid, round, vid, m0_district, block, eligible, samp_wgt,
+         treated_GK, treat_GD_huge, treat_GD_main, # treatment dummies
+         consumption_asinh, # Outcome variable
+         consumption_asinh_R1, # Baseline value of consumption_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio) %>% # controls
+  filter(eligible == "eligible", round == 2)
+
+```
+
+
+**Frequentist model** used to approximate C&A's results
+
+```{r, include=FALSE}
+per_cap_consumption_freqmodel <- 
+  lm_robust(consumption_asinh ~ treated_GK + treat_GD_main + treat_GD_huge + 
+       consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio,
+     fixed_effects = ~ factor(block),
+     se_type = "stata",
+     weights = samp_wgt,
+     clusters = vid,
+     data = per_cap_consumption_data)
+
+summary(per_cap_consumption_freqmodel)
+per_cap_consumption_freqmodel <- tidy(per_cap_consumption_freqmodel)
+view(per_cap_consumption_freqmodel)
+write_csv(per_cap_consumption_freqmodel, "variable_outcomes\\per_cap_consumption_freq.csv")
+#per_cap_consumption_outcomes <- summary(per_cap_consumption_model)
+
+```
+
+
+**Model 1:** This is a basic model
+
+```{r, include=FALSE}
+
+per_cap_consumption_Bayesmodel_1 <- 
+  brm(formula = consumption_asinh | weights(samp_wgt) ~ 
+        factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio,
+     data = per_cap_consumption_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     iter = 2500, # increased iterations to address ESS issues
+     cores = getOption("mc.cores", 1)) #default set to 1 core
+
+per_cap_consumption_Bayesmodel_1_tidy <- tidy(per_cap_consumption_Bayesmodel_1)
+view(per_cap_consumption_Bayesmodel_1_tidy)
+write_csv(per_cap_consumption_Bayesmodel_1_tidy, "variable_outcomes\\per_cap_consumption_bayes_m1.csv")
+
+summary(per_cap_consumption_Bayesmodel_1)
+mcmc_plot(per_cap_consumption_Bayesmodel_1, type = "trace")
+mcmc_plot(per_cap_consumption_Bayesmodel_1, type = "dens")
+mcmc_plot(per_cap_consumption_Bayesmodel_1, type = "acf")
+
+```
+
+**Model 2:** This is the "naive" fixed effects model. Add a dummy variable for villiage ID, this is the closest thing to frq clustering without clustering (expect wider standard errros) NOTE: calculation time is very long. Adjust your expectation accordingly.
+
+```{r, include=FALSE}
+# per_cap_consumption_Bayesmodel_2 <- 
+#   brm(formula = consumption_asinh | weights(samp_wgt) ~ 
+#         factor(block)+ factor(vid) + treated_GK + treat_GD_main + treat_GD_huge + 
+#         consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio,
+#      data = per_cap_consumption_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# 
+# per_cap_consumption_Bayesmodel_2 <- tidy(per_cap_consumption_Bayesmodel_2)
+# view(per_cap_consumption_Bayesmodel_2)
+# write_csv(per_cap_consumption_Bayesmodel_2, "variable_outcomes\\per_cap_consumption_bayes_m2.csv")
+```
+
+
+**Model 3:** Use a heirachical HLM model with villiage ID, leveled block in main model
+
+```{r, include=FALSE}
+# per_cap_consumption_Bayesmodel_3 <- 
+#   brm(formula = consumption_asinh | weights(samp_wgt) ~ 
+#         factor(block)+ treated_GK + treat_GD_main + treat_GD_huge + 
+#         consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+#         (1 | vid),
+#      data = per_cap_consumption_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# per_cap_consumption_Bayesmodel_3 <- tidy(per_cap_consumption_Bayesmodel_3)
+# view(per_cap_consumption_Bayesmodel_3)
+# write_csv(per_cap_consumption_Bayesmodel_3, "variable_outcomes\\per_cap_consumption_bayes_m3.csv")
+```
+
+**Model 4:** Use a heirachical HLM model with villiage ID and block
+
+```{r, include=FALSE}
+per_cap_consumption_Bayesmodel_4 <- 
+  brm(formula = consumption_asinh | weights(samp_wgt) ~ 
+        treated_GK + treat_GD_main + treat_GD_huge + 
+        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        (1 | vid) + (1 | block),
+     data = per_cap_consumption_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+per_cap_consumption_Bayesmodel_4 <- tidy(per_cap_consumption_Bayesmodel_4)
+view(per_cap_consumption_Bayesmodel_4)
+write_csv(per_cap_consumption_Bayesmodel_4, "variable_outcomes\\per_cap_consumption_bayes_m4.csv")
+```
+
+
+## Dietary Diversity - Primary Outcome
+
+Load the *Dietary Diversity* variables
+
+```{r, include=FALSE}
+dietary_diversity_data <- gik_hh_data %>%
+  select(hhid, round, vid, m0_district, block, eligible, samp_wgt,
+         treated_GK, treat_GD_huge, treat_GD_main, # treatment dummies
+         dietarydiversity, # Outcome variable - Household dietary diversity score
+         dietarydiversity_R1, # Baseline value of dietarydiversity, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, Lsavingsstock_asinh3, # controls
+         Lconsumpti_x_Ldietarydi, Lconsumpti_x_Lproductiv, Ldietarydi_x_Lassetscon) %>% # control interactions
+  filter(eligible == "eligible", round == 2)
+```
+
+**Frequentist model** used to approximate C&A's results
+
+```{r, include=FALSE}
+
+dietary_diversity_freqmodel <- 
+  lm_robust(dietarydiversity ~ treated_GK + treat_GD_main + treat_GD_huge + 
+       dietarydiversity_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lsavingsstock_asinh3 + 
+       Lconsumpti_x_Ldietarydi + Lconsumpti_x_Lproductiv + Ldietarydi_x_Lassetscon, 
+     fixed_effects = ~ factor(block),
+     se_type = "stata",
+     weights = samp_wgt,
+     clusters = vid,
+     data = dietary_diversity_data)
+
+summary(dietary_diversity_freqmodel)
+dietary_diversity_freqmodel <- tidy(dietary_diversity_freqmodel)
+view(dietary_diversity_freqmodel)
+write_csv(dietary_diversity_freqmodel, "variable_outcomes\\dietary_diversity_freq.csv")
+#dietary_diversity_outcomes <- summary(dietary_diversity_freqmodel)
+```
+
+**Model 1:** This is a basic model
+
+```{r, include=FALSE}
+dietary_diversity_Bayesmodel_1 <- 
+  brm(formula = dietarydiversity | weights(samp_wgt) ~ 
+        factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+        dietarydiversity_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lsavingsstock_asinh3 + 
+       Lconsumpti_x_Ldietarydi + Lconsumpti_x_Lproductiv + Ldietarydi_x_Lassetscon,
+     data = dietary_diversity_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+dietary_diversity_Bayesmodel_1 <- tidy(dietary_diversity_Bayesmodel_1)
+view(dietary_diversity_Bayesmodel_1)
+write_csv(dietary_diversity_Bayesmodel_1, "variable_outcomes\\dietary_diversity_bayes_m1.csv")
+```
+
+**Model 2:** This is the "naive" fixed effects model. Add a dummy variable for villiage ID, this is the closest thing to frq clustering without clustering (expect wider standard errros) NOTE: calculation time is very long. Adjust your expectation accordingly.
+
+```{r, include=FALSE}
+# dietary_diversity_Bayesmodel_2 <- 
+#   brm(formula = dietarydiversity | weights(samp_wgt) ~ 
+#         factor(block) + factor(vid) + treated_GK + treat_GD_main + treat_GD_huge + 
+#         dietarydiversity_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lsavingsstock_asinh3 + 
+#        Lconsumpti_x_Ldietarydi + Lconsumpti_x_Lproductiv + Ldietarydi_x_Lassetscon,
+#      data = dietary_diversity_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# dietary_diversity_Bayesmodel_2 <- tidy(dietary_diversity_Bayesmodel_2)
+# view(dietary_diversity_Bayesmodel_2)
+# write_csv(dietary_diversity_Bayesmodel_2, "variable_outcomes\\dietary_diversity_bayes_m2.csv")
+```
+
+
+**Model 3:** Use a heirachical HLM model with villiage ID, leveled block in main model
+
+```{r, include=FALSE}
+# dietary_diversity_Bayesmodel_3 <- 
+#   brm(formula = dietarydiversity | weights(samp_wgt) ~ 
+#         factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+#         dietarydiversity_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lsavingsstock_asinh3 + 
+#        Lconsumpti_x_Ldietarydi + Lconsumpti_x_Lproductiv + Ldietarydi_x_Lassetscon +
+#         (1 | vid),
+#      data = dietary_diversity_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# dietary_diversity_Bayesmodel_3 <- tidy(dietary_diversity_Bayesmodel_3)
+# view(dietary_diversity_Bayesmodel_3)
+# write_csv(dietary_diversity_Bayesmodel_3, "variable_outcomes\\dietary_diversity_bayes_m3.csv")
+```
+
+
+**Model 4:** Use a heirachical HLM model with villiage ID and block
+
+```{r, include=FALSE}
+dietary_diversity_Bayesmodel_4 <- 
+  brm(formula = dietarydiversity | weights(samp_wgt) ~ 
+        treated_GK + treat_GD_main + treat_GD_huge + 
+        dietarydiversity_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lsavingsstock_asinh3 + 
+        Lconsumpti_x_Ldietarydi + Lconsumpti_x_Lproductiv + Ldietarydi_x_Lassetscon + 
+        (1 | vid) + (1 | block),
+     data = dietary_diversity_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     control = list(max_treedepth = 11),
+     cores = getOption("mc.cores", 1))
+
+dietary_diversity_Bayesmodel_4 <- tidy(dietary_diversity_Bayesmodel_4)
+view(dietary_diversity_Bayesmodel_4)
+write_csv(dietary_diversity_Bayesmodel_4, "variable_outcomes\\dietary_diversity_bayes_m4.csv")
+```
+
+
+## Total Household Wealth - Primary Outcome
+
+Load the *Total Household Wealth* variables
+
+```{r, include=FALSE}
+wealth_data <- gik_hh_data %>%
+  select(hhid, round, vid, block, eligible, samp_wgt,
+         treated_GK, treat_GD_huge, treat_GD_main, # treatment dummies
+         wealth_asinh, # Outcome variable
+         wealth_asinh_R1, # Baseline value of wealth_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, Lowndwelling) %>% # controls
+  filter(eligible == "eligible", round == 2)
+```
+
+
+**Frequentist model** used to approximate C&A's results
+
+```{r, include=FALSE}
+wealth_freqmodel <- 
+  lm_robust(wealth_asinh ~ treated_GK + treat_GD_main + treat_GD_huge + 
+       wealth_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lowndwelling,
+     fixed_effects = ~factor(block),
+     se_type = "stata",
+     weights = samp_wgt,
+     clusters = vid,
+     data = wealth_data)
+
+summary(wealth_freqmodel)
+wealth_freqmodel <- tidy(wealth_freqmodel)
+view(wealth_freqmodel)
+write_csv(wealth_freqmodel, "variable_outcomes\\wealth_freq.csv")
+```
+
+
+**Model 1:** This is a basic model
+
+The default setting results in the following errors: 1. exceed maximum tree depth, and 2. Effective Sample Size (ESS). Posterior means, medians, variances, and tail quantiles may be unreliable. Try increasing thenumber of iterations, respective to the warmup. Increasing treedepth significantly increases processing time, increase a last resort. 
+
+To compensate for the ESS errors, we've expanded the number of iterations and increased the warmup to sampleing ratio. ESS errors are still apprarent and further exploration is needed.
+
+```{r, include=FALSE}
+wealth_Bayesmodel_1 <- 
+  brm(formula = wealth_asinh | weights(samp_wgt) ~ 
+        factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+        wealth_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lowndwelling,
+     data = wealth_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 2000, # increased iterations to address ESS issues
+     iter = 5000, # increased iterations to address ESS issues
+     cores = getOption("mc.cores", 1))
+
+wealth_Bayesmodel_1 <- tidy(wealth_Bayesmodel_1)
+view(wealth_Bayesmodel_1)
+write_csv(wealth_Bayesmodel_1, "variable_outcomes\\wealth_bayes_m1.csv")
+```
+
+
+**Model 2:** This is the "naive" fixed effects model. Add a dummy variable for villiage ID, this is the closest thing to frq clustering without clustering (expect wider standard errros) NOTE: calculation time is very long. Adjust your expectation accordingly.
+
+```{r, include=FALSE}
+# wealth_Bayesmodel_2 <- 
+#   brm(formula = wealth_asinh | weights(samp_wgt) ~ 
+#         factor(block) + factor(vid) + treated_GK + treat_GD_main + treat_GD_huge + 
+#         wealth_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lowndwelling,
+#      data = wealth_data,
+#      family = gaussian("identity"),
+#      chains = 4,
+#      warmup = floor(iter/2),
+#      iter = 2000,
+#      thin = 1,
+#      control = list(max_treedepth = 10),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# wealth_Bayesmodel_2 <- tidy(wealth_Bayesmodel_2)
+# view(wealth_Bayesmodel_2)
+# write_csv(wealth_Bayesmodel_2, "variable_outcomes\\wealth_bayes_m2.csv")
+```
+
+**Model 3:** Use a heirachical HLM model with villiage ID, leveled block in main model
+
+```{r, include=FALSE}
+# wealth_Bayesmodel_3 <- 
+#   brm(formula = wealth_asinh | weights(samp_wgt) ~ 
+#         factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+#         wealth_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lowndwelling +
+#         (1 | vid),
+#      data = wealth_data,
+#      family = gaussian("identity"),
+#      chains = 4,
+#      warmup = floor(iter/2),
+#      iter = 2000,
+#      thin = 1,
+#      control = list(max_treedepth = 10),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# wealth_Bayesmodel_3 <- tidy(wealth_Bayesmodel_3)
+# view(wealth_Bayesmodel_3)
+# write_csv(wealth_Bayesmodel_3, "variable_outcomes\\wealth_bayes_m3.csv")
+```
+
+**Model 4:** Use a heirachical HLM model with villiage ID and block
+
+The default setting results in the following errors: 1. exceed maximum tree depth, and 2. Effective Sample Size (ESS). Posterior means, medians, variances, and tail quantiles may be unreliable. Try increasing thenumber of iterations, respective to the warmup. Increasing treedepth significantly increases processing time, increase a last resort. 
+
+Getting the same errors as model 1.
+
+```{r, include=FALSE}
+wealth_Bayesmodel_4 <- 
+  brm(formula = wealth_asinh | weights(samp_wgt) ~ 
+        treated_GK + treat_GD_main + treat_GD_huge + 
+        wealth_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lowndwelling +
+        (1 | block) + (1 | vid),
+     data = wealth_data,
+     family = gaussian("identity"),
+     chains = 4,
+     warmup = 1000,
+     iter = 2000,
+     control = list(max_treedepth = 10),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+wealth_Bayesmodel_4 <- tidy(wealth_Bayesmodel_4)
+view(wealth_Bayesmodel_4)
+write_csv(wealth_Bayesmodel_4, "variable_outcomes\\wealth_bayes_m4.csv")
+```
+
+## Borrowing Stock - Secondary Outcome
+
+Load the *Borriwing Stock* variables
+```{r, include=FALSE}
+borrowing_stock_data <- gik_hh_data %>%
+  select(hhid, round, vid, m0_district, block, eligible, samp_wgt,
+         treated_GK, treat_GD_huge, treat_GD_main, # treatment dummies
+         borrowingstock_asinh, # Outcome variable
+         borrowingstock_asinh_R1, # Baseline value of borrowingstock_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio) %>% # controls
+  filter(eligible == "eligible", round == 2)
+```
+
+**Frequentist model** used to approximate C&A's results
+```{r, include=FALSE}
+borrowing_stock_freqmodel <- 
+  lm_robust(borrowingstock_asinh ~ treated_GK + treat_GD_main + treat_GD_huge + 
+       borrowingstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio, 
+     fixed_effects = ~ factor(block),
+     se_type = "stata",
+     weights = samp_wgt,
+     clusters = vid,
+     data = borrowing_stock_data)
+
+summary(borrowing_stock_freqmodel)
+borrowing_stock_freqmodel <- tidy(borrowing_stock_freqmodel)
+view(borrowing_stock_freqmodel)
+write_csv(borrowing_stock_freqmodel, "variable_outcomes\\borrowing_stock_freq.csv")
+```
+
+
+**Model 1:** This is a basic model
+```{r, include=FALSE}
+borrowing_stock_Bayesmodel_1 <- 
+  brm(formula = borrowingstock_asinh | weights(samp_wgt) ~ 
+        factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+        borrowingstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio,
+     data = borrowing_stock_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+borrowing_stock_Bayesmodel_1 <- tidy(borrowing_stock_Bayesmodel_1)
+view(borrowing_stock_Bayesmodel_1)
+write_csv(borrowing_stock_Bayesmodel_1, "variable_outcomes\\borrowing_stock_bayes_m1.csv")
+```
+
+
+**Model 2:** This is the "naive" fixed effects model. Add a dummy variable for villiage ID, this is the closest thing to frq clustering without clustering (expect wider standard errros) NOTE: calculation time is very long. Adjust your expectation accordingly.
+```{r, include=FALSE, echo=FALSE}
+#borrowing_stock_Bayesmodel_2 <- 
+#  brm(formula = borrowingstock_asinh | weights(samp_wgt) ~ 
+#        factor(block) + factor(vid) + treated_GK + treat_GD_main + treat_GD_huge + 
+#        borrowingstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio,
+#     data = borrowing_stock_data,
+#     family = gaussian("identity"),
+#     seed = 1272022,
+#     cores = getOption("mc.cores", 1))
+
+#borrowing_stock_Bayesmodel_2 <- tidy(borrowing_stock_Bayesmodel_2)
+#view(borrowing_stock_Bayesmodel_2)
+#write_csv(borrowing_stock_Bayesmodel_2, "variable_outcomes\\borrowing_stock_bayes_m2.csv")
+```
+
+
+**Model 3:** Use a heirachical HLM model with villiage ID, leveled block in main model
+```{r, include=FALSE, echo=FALSE}
+# borrowing_stock_Bayesmodel_3 <-
+#   brm(formula = borrowingstock_asinh | weights(samp_wgt) ~
+#         factor(block) + treated_GK + treat_GD_main + treat_GD_huge +
+#         borrowingstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+#         (1 | vid),
+#      data = borrowing_stock_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# borrowing_stock_Bayesmodel_3 <- tidy(borrowing_stock_Bayesmodel_3)
+# view(borrowing_stock_Bayesmodel_3)
+# write_csv(borrowing_stock_Bayesmodel_3, "variable_outcomes\\borrowing_stock_bayes_m3.csv")
+```
+
+**Model 4:** Use a heirachical HLM model with villiage ID and block
+```{r, include=FALSE}
+borrowing_stock_Bayesmodel_4 <- 
+  brm(formula = borrowingstock_asinh | weights(samp_wgt) ~ 
+        treated_GK + treat_GD_main + treat_GD_huge + 
+        borrowingstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        (1 | block) + (1 | vid),
+     data = borrowing_stock_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+borrowing_stock_Bayesmodel_4 <- tidy(borrowing_stock_Bayesmodel_4)
+view(borrowing_stock_Bayesmodel_4)
+write_csv(borrowing_stock_Bayesmodel_4, "variable_outcomes\\borrowing_stock_bayes_m4.csv")
+```
+
+
+## Savings Stock - Secondary Outcome
+
+Load the *Savings Stock* variables
+```{r, include=FALSE}
+savings_stock_data <- gik_hh_data %>%
+  select(hhid, round, vid, m0_district, block, eligible, samp_wgt,
+         treated_GK, treat_GD_huge, treat_GD_main, # treatment dummies
+         savingsstock_asinh, # Outcome variable
+         savingsstock_asinh_R1, # Baseline value of savingsstock_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, # controls
+         Lconsumpti_x_Lproductiv, Lconsumpti_x_Lassetscon) %>% # interactions 
+  filter(eligible == "eligible", round == 2)
+```
+
+**Frequentist model** used to approximate C&A's results
+```{r, include=FALSE}
+savings_stock_freqmodel <- 
+  lm_robust(savingsstock_asinh ~ treated_GK + treat_GD_main + treat_GD_huge + 
+       savingsstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + 
+       Lconsumpti_x_Lproductiv + Lconsumpti_x_Lassetscon,
+     fixed_effects = ~ factor(block),
+     se_type = "stata",
+     weights = samp_wgt,
+     clusters = vid,
+     data = savings_stock_data)
+
+summary(savings_stock_freqmodel)
+savings_stock_freqmodel <- tidy(savings_stock_freqmodel)
+view(savings_stock_freqmodel)
+write_csv(savings_stock_freqmodel, "variable_outcomes\\savings_stock_freq.csv")
+```
+
+
+**Model 1:** This is a basic model
+```{r, include=FALSE}
+savings_stock_Bayesmodel_1 <- 
+  brm(formula = savingsstock_asinh | weights(samp_wgt) ~ 
+       factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+       savingsstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + 
+       Lconsumpti_x_Lproductiv + Lconsumpti_x_Lassetscon,
+     data = savings_stock_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+savings_stock_Bayesmodel_1 <- tidy(savings_stock_Bayesmodel_1)
+view(savings_stock_Bayesmodel_1)
+write_csv(savings_stock_Bayesmodel_1, "variable_outcomes\\savings_stock_bayes_m1.csv")
+```
+
+
+**Model 2:** This is the "naive" fixed effects model. Add a dummy variable for villiage ID, this is the closest thing to frq clustering without clustering (expect wider standard errors) NOTE: calculation time is very long. Adjust your expectations accordingly.
+```{r, include=FALSE, echo=FALSE}
+# savings_stock_Bayesmodel_2 <- 
+#   brm(formula = savingsstock_asinh | weights(samp_wgt) ~ 
+#        factor(block) + factor(vid) + treated_GK + treat_GD_main + treat_GD_huge + 
+#        savingsstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + 
+#        Lconsumpti_x_Lproductiv + Lconsumpti_x_Lassetscon,
+#      data = savings_stock_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# savings_stock_Bayesmodel_2 <- tidy(savings_stock_Bayesmodel_2)
+# view(savings_stock_Bayesmodel_2)
+# write_csv(savings_stock_Bayesmodel_2, "variable_outcomes\\savings_stock_bayes_m2.csv")
+```
+
+
+**Model 3:** Use a heirachical HLM model with villiage ID, leveled block in main model
+```{r, include=FALSE, echo=FALSE}
+# savings_stock_Bayesmodel_3 <- 
+#   brm(formula = savingsstock_asinh | weights(samp_wgt) ~ 
+#        factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+#        savingsstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + 
+#        Lconsumpti_x_Lproductiv + Lconsumpti_x_Lassetscon +
+#        (1 | vid),
+#      data = savings_stock_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# savings_stock_Bayesmodel_3 <- tidy(savings_stock_Bayesmodel_3)
+# view(savings_stock_Bayesmodel_3)
+# write_csv(savings_stock_Bayesmodel_3, "variable_outcomes\\savings_stock_bayes_m3.csv")
+```
+
+**Model 4:** Use a heirachical HLM model with villiage ID and block
+```{r, include=FALSE}
+savings_stock_Bayesmodel_4 <- 
+  brm(formula = savingsstock_asinh | weights(samp_wgt) ~ 
+       treated_GK + treat_GD_main + treat_GD_huge + 
+       savingsstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + 
+       Lconsumpti_x_Lproductiv + Lconsumpti_x_Lassetscon +
+       (1 | block) + (1 | vid),
+     data = savings_stock_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+savings_stock_Bayesmodel_4 <- tidy(savings_stock_Bayesmodel_4)
+view(savings_stock_Bayesmodel_4)
+write_csv(savings_stock_Bayesmodel_4, "variable_outcomes\\savings_stock_bayes_m4.csv")
+```
+
+
+## Health Knowledge - Secondary Outcome
+
+Load the *Health Knowledge* variables
+
+```{r, include=FALSE}
+health_knowledge_data <- gik_hh_data %>%
+  select(hhid, round, vid, m0_district, block, eligible, samp_wgt,
+         treated_GK, treat_GD_huge, treat_GD_main, # treatment dummies
+         health_knowledge, # Outcome variable
+         health_knowledge_R1, # Baseline value of health_knowledge, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio) %>% # controls
+  filter(eligible == "eligible", round == 2)
+```
+
+
+**Frequentist model** used to approximate C&A's results
+
+```{r, include=FALSE}
+health_knowledge_freqmodel <- 
+  lm_robust(health_knowledge ~ treated_GK + treat_GD_main + treat_GD_huge + 
+       health_knowledge_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio,
+     fixed_effects = ~ factor(block),
+     se_type = "stata",
+     weights = samp_wgt,
+     clusters = vid,
+     data = health_knowledge_data)
+
+summary(health_knowledge_freqmodel)
+health_knowledge_freqmodel <- tidy(health_knowledge_freqmodel)
+view(health_knowledge_freqmodel)
+write_csv(health_knowledge_freqmodel, "variable_outcomes\\health_knowledge_freq.csv")
+```
+
+**Model 1:** This is a basic model
+
+```{r, include=FALSE}
+health_knowledge_Bayesmodel_1 <- 
+  brm(formula = health_knowledge | weights(samp_wgt) ~ 
+       factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+       health_knowledge_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio,
+     data = health_knowledge_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+health_knowledge_Bayesmodel_1 <- tidy(health_knowledge_Bayesmodel_1)
+view(health_knowledge_Bayesmodel_1)
+write_csv(health_knowledge_Bayesmodel_1, "variable_outcomes\\health_knowledge_bayes_m1.csv")
+```
+
+
+**Model 2:** This is the "naive" fixed effects model. Add a dummy variable for villiage ID, this is the closest thing to frq clustering without clustering (expect wider standard errros) NOTE: calculation time is very long. Adjust your expectation accordingly.
+
+```{r, include=FALSE, echo=FALSE}
+# health_knowledge_Bayesmodel_2 <- 
+#   brm(formula = health_knowledge | weights(samp_wgt) ~ 
+#        factor(block) + factor(vid) + treated_GK + treat_GD_main + treat_GD_huge + 
+#        health_knowledge_R1 + 
+#        Lhh_wealth_asinh + Lvill_eligible_ratio,
+#      data = health_knowledge_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# health_knowledge_Bayesmodel_2 <- tidy(health_knowledge_Bayesmodel_2)
+# view(health_knowledge_Bayesmodel_2)
+# write_csv(health_knowledge_Bayesmodel_2, "variable_outcomes\\health_knowledge_bayes_m2.csv")
+```
+
+**Model 3:** Use a heirachical HLM model with villiage ID, leveled block in main model
+
+```{r, include=FALSE, echo=FALSE}
+# health_knowledge_Bayesmodel_3 <- 
+#   brm(formula = health_knowledge | weights(samp_wgt) ~ 
+#        factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+#        health_knowledge_R1 + 
+#        Lhh_wealth_asinh + Lvill_eligible_ratio +
+#        (1 | vid),
+#      data = health_knowledge_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# health_knowledge_Bayesmodel_3 <- tidy(health_knowledge_Bayesmodel_3)
+# view(health_knowledge_Bayesmodel_3)
+# write_csv(health_knowledge_Bayesmodel_3, "variable_outcomes\\health_knowledge_bayes_m3.csv")
+```
+
+**Model 4:** Use a heirachical HLM model with villiage ID and block
+
+```{r, include=FALSE}
+health_knowledge_Bayesmodel_4 <- 
+  brm(formula = health_knowledge | weights(samp_wgt) ~ 
+       treated_GK + treat_GD_main + treat_GD_huge + 
+       health_knowledge_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio +
+       (1 | block) + (1 | vid),
+     data = health_knowledge_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+health_knowledge_Bayesmodel_4 <- tidy(health_knowledge_Bayesmodel_4)
+view(health_knowledge_Bayesmodel_4)
+write_csv(health_knowledge_Bayesmodel_4, "variable_outcomes\\health_knowledge_bayes_m4.csv")
+```
+
+## Sanitation Practices - Secondary Outcome
+
+Load the *Sanitation Practices* variables
+```{r, include=FALSE}
+# Set up the data
+sanitation_practices_data <- gik_hh_data %>%
+  select(hhid, round, vid, m0_district, block, eligible, samp_wgt,
+         treated_GK, treat_GD_huge, treat_GD_main, # treatment dummies
+         sanitation_practices, # Outcome variable
+         sanitation_practices_R1, # Baseline value of sanitation_practices, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, # controls
+         Lproductiv_x_Lassetscon) %>% # Interactions
+  filter(eligible == "eligible", round == 2)
+```
+
+**Frequentist model** used to approximate C&A's results
+```{r, include=FALSE}
+sanitation_practices_freqmodel <- 
+  lm_robust(sanitation_practices ~ treated_GK + treat_GD_main + treat_GD_huge + 
+       sanitation_practices_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lproductiv_x_Lassetscon,
+     fixed_effects = ~ factor(block),
+     se_type = "stata",
+     weights = samp_wgt,
+     clusters = vid,
+     data = sanitation_practices_data)
+
+summary(sanitation_practices_freqmodel)
+sanitation_practices_freqmodel <- tidy(sanitation_practices_freqmodel)
+view(sanitation_practices_freqmodel)
+write_csv(sanitation_practices_freqmodel, "variable_outcomes\\sanitation_practices_freq.csv")
+```
+
+
+**Model 1:** This is a basic model
+```{r, include=FALSE}
+sanitation_practices_Bayesmodel_1 <- 
+  brm(formula = sanitation_practices | weights(samp_wgt) ~ 
+       factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+       sanitation_practices_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lproductiv_x_Lassetscon,
+     data = sanitation_practices_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+sanitation_practices_Bayesmodel_1 <- tidy(sanitation_practices_Bayesmodel_1)
+view(sanitation_practices_Bayesmodel_1)
+write_csv(sanitation_practices_Bayesmodel_1, "variable_outcomes\\sanitation_practices_bayes_m1.csv")
+```
+
+**Model 2:** This is the "naive" fixed effects model. Add a dummy variable for villiage ID, this is the closest thing to frq clustering without clustering (expect wider standard errros) NOTE: calculation time is very long. Adjust your expectation accordingly.
+```{r, include=FALSE, echo=FALSE}
+sanitation_practices_Bayesmodel_2 <- 
+  brm(formula = sanitation_practices | weights(samp_wgt) ~ 
+       factor(block) + factor(vid) + treated_GK + treat_GD_main + treat_GD_huge + 
+       sanitation_practices_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lproductiv_x_Lassetscon,
+     data = sanitation_practices_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+sanitation_practices_Bayesmodel_2 <- tidy(sanitation_practices_Bayesmodel_2)
+view(sanitation_practices_Bayesmodel_2)
+write_csv(sanitation_practices_Bayesmodel_2, "variable_outcomes\\sanitation_practices_bayes_m2.csv")
+```
+
+**Model 3:** Use a heirachical HLM model with villiage ID, leveled block in main model
+```{r, include=FALSE, echo=FALSE}
+sanitation_practices_Bayesmodel_3 <- 
+  brm(formula = sanitation_practices | weights(samp_wgt) ~ 
+       factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+       sanitation_practices_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lproductiv_x_Lassetscon +
+       (1 | vid),
+     data = sanitation_practices_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+sanitation_practices_Bayesmodel_3 <- tidy(sanitation_practices_Bayesmodel_3)
+view(sanitation_practices_Bayesmodel_3)
+write_csv(sanitation_practices_Bayesmodel_3, "variable_outcomes\\sanitation_practices_bayes_m3.csv")
+```
+
+**Model 4:** Use a heirachical HLM model with villiage ID and block
+```{r, include=FALSE}
+sanitation_practices_Bayesmodel_4 <- 
+  brm(formula = sanitation_practices | weights(samp_wgt) ~ 
+       treated_GK + treat_GD_main + treat_GD_huge + 
+       sanitation_practices_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lproductiv_x_Lassetscon +
+       (1 | block) + (1 | vid),
+     data = sanitation_practices_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+sanitation_practices_Bayesmodel_4 <- tidy(sanitation_practices_Bayesmodel_4)
+view(sanitation_practices_Bayesmodel_4)
+write_csv(sanitation_practices_Bayesmodel_4, "variable_outcomes\\sanitation_practices_bayes_m4.csv")
+```
+
+
+## Productive Assets - Secondary Outcome
+
+Load the *Productive Assets* variables
+```{r, include=FALSE}
+productive_assets_data <- gik_hh_data %>%
+  select(hhid, round, vid, m0_district, block, eligible,samp_wgt,
+         treated_GK, treat_GD_huge, treat_GD_main, # treatment dummies
+         productiveassets_asinh, # Outcome variable
+         productiveassets_asinh_R1, # Baseline value of productiveassets_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, # controls
+         Lconsumpti_x_Lassetscon) %>% # Interactions
+  filter(eligible == "eligible", round == 2)
+```
+
+
+**Frequentist model** used to approximate C&A's results
+```{r, include=FALSE}
+productive_assets_freqmodel <- 
+  lm_robust(productiveassets_asinh ~ treated_GK + treat_GD_main + treat_GD_huge + 
+       productiveassets_asinh_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lconsumpti_x_Lassetscon,
+     fixed_effects = ~ factor(block),
+     se_type = "stata",
+     weights = samp_wgt,
+     clusters = vid,
+     data = productive_assets_data)
+
+summary(productive_assets_freqmodel)
+productive_assets_freqmodel <- tidy(productive_assets_freqmodel)
+view(productive_assets_freqmodel)
+write_csv(productive_assets_freqmodel, "variable_outcomes\\productive_assets_freq.csv")
+```
+
+
+**Model 1:** This is a basic model
+```{r, include=FALSE}
+productive_assets_Bayesmodel_1 <- 
+  brm(formula = productiveassets_asinh | weights(samp_wgt) ~ 
+       factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+       productiveassets_asinh_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lconsumpti_x_Lassetscon,
+     data = productive_assets_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+productive_assets_Bayesmodel_1 <- tidy(productive_assets_Bayesmodel_1)
+view(productive_assets_Bayesmodel_1)
+write_csv(productive_assets_Bayesmodel_1, "variable_outcomes\\productive_assets_bayes_m1.csv")
+```
+
+**Model 2:** This is the "naive" fixed effects model. Add a dummy variable for villiage ID, this is the closest thing to frq clustering without clustering (expect wider standard errros) NOTE: calculation time is very long. Adjust your expectation accordingly.
+```{r, include=FALSE, echo=FALSE}
+# productive_assets_Bayesmodel_2 <- 
+#   brm(formula = productiveassets_asinh | weights(samp_wgt) ~ 
+#        factor(block) + factor(vid) + treated_GK + treat_GD_main + treat_GD_huge + 
+#        productiveassets_asinh_R1 + 
+#        Lhh_wealth_asinh + Lvill_eligible_ratio + Lconsumpti_x_Lassetscon,
+#      data = productive_assets_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# productive_assets_Bayesmodel_2 <- tidy(productive_assets_Bayesmodel_2)
+# view(productive_assets_Bayesmodel_2)
+# write_csv(productive_assets_Bayesmodel_2, "variable_outcomes\\productive_assets_bayes_m2.csv")
+```
+
+**Model 3:** Use a heirachical HLM model with villiage ID, leveled block in main model
+```{r, include=FALSE, echo=FALSE}
+# productive_assets_Bayesmodel_3 <- 
+#   brm(formula = productiveassets_asinh | weights(samp_wgt) ~ 
+#        factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+#        productiveassets_asinh_R1 + 
+#        Lhh_wealth_asinh + Lvill_eligible_ratio + Lconsumpti_x_Lassetscon +
+#        (1 | vid),
+#      data = productive_assets_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# productive_assets_Bayesmodel_3 <- tidy(productive_assets_Bayesmodel_3)
+# view(productive_assets_Bayesmodel_3)
+# write_csv(productive_assets_Bayesmodel_3, "variable_outcomes\\productive_assets_bayes_m3.csv")
+```
+
+
+**Model 4:** Use a heirachical HLM model with villiage ID and block
+```{r, include=FALSE}
+productive_assets_Bayesmodel_4 <- 
+  brm(formula = productiveassets_asinh | weights(samp_wgt) ~ 
+       treated_GK + treat_GD_main + treat_GD_huge + 
+       productiveassets_asinh_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lconsumpti_x_Lassetscon +
+       (1 | block) + (1 | vid),
+     data = productive_assets_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+productive_assets_Bayesmodel_4 <- tidy(productive_assets_Bayesmodel_4)
+view(productive_assets_Bayesmodel_4)
+write_csv(productive_assets_Bayesmodel_4, "variable_outcomes\\productive_assets_bayes_m4.csv")
+```
+
+
+## Consumptions Assets - Secondary Outcome
+
+Load the *Consumption Assets* variables
+```{r, include=FALSE}
+# Set up the data
+consumption_assets_data <- gik_hh_data %>%
+  select(hhid, round, vid, m0_district, block, eligible, samp_wgt,
+         treated_GK, treat_GD_huge, treat_GD_main, # treatment dummies
+         assetsconsumption_asinh, # Outcome variable
+         assetsconsumption_asinh_R1, # Baseline value of assetsconsumption_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, Lroomsnumb, Ldurablesexpenditure,  # controls
+         Ldietarydi_x_Lassetscon, Lproductiv_x_Lassetscon) %>% # Interactions
+  filter(eligible == "eligible", round == 2)
+```
+
+
+**Frequentist model** used to approximate C&A's results
+```{r, include=FALSE}
+consumption_assets_freqmodel <- 
+  lm_robust(assetsconsumption_asinh ~ treated_GK + treat_GD_main + treat_GD_huge + 
+       assetsconsumption_asinh_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure + 
+       Ldietarydi_x_Lassetscon + Lproductiv_x_Lassetscon,
+     fixed_effects = ~ factor(block),
+     se_type = "stata",
+     weights = samp_wgt,
+     clusters = vid,
+     data = consumption_assets_data)
+
+summary(consumption_assets_freqmodel)
+consumption_assets_freqmodel <- tidy(consumption_assets_freqmodel)
+view(consumption_assets_freqmodel)
+write_csv(consumption_assets_freqmodel, "variable_outcomes\\consumption_assets_freq.csv")
+```
+
+
+**Model 1:** This is a basic model
+The default setting results in the following errors: 1. Divergent transitions 2. exceed maximum tree depth, and 3. Effective Sample Size (ESS). Posterior means, medians, variances, and tail quantiles may be unreliable. Try increasing thenumber of iterations, respective to the warmup. Increasing treedepth significantly increases processing time, increase a last resort. 
+
+To compensate for the ESS errors, try increasing iterations and the iteration:warmup ratio to address the ESS issues. Will need more processing power to effectively 
+
+```{r, include=FALSE}
+consumption_assets_Bayesmodel_1 <- 
+  brm(formula = assetsconsumption_asinh | weights(samp_wgt) ~ 
+       factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+       assetsconsumption_asinh_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure + 
+       Ldietarydi_x_Lassetscon + Lproductiv_x_Lassetscon,
+     data = consumption_assets_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+consumption_assets_Bayesmodel_1 <- tidy(consumption_assets_Bayesmodel_1)
+view(consumption_assets_Bayesmodel_1)
+write_csv(consumption_assets_Bayesmodel_1, "variable_outcomes\\consumption_assets_bayes_m1.csv")
+```
+
+
+**Model 2:** This is the "naive" fixed effects model. Add a dummy variable for villiage ID, this is the closest thing to frq clustering without clustering (expect wider standard errros) NOTE: calculation time is very long. Adjust your expectation accordingly.
+```{r, include=FALSE, echo=FALSE}
+# consumption_assets_Bayesmodel_2 <- 
+#   brm(formula = assetsconsumption_asinh | weights(samp_wgt) ~ 
+#        factor(block) + factor(vid) + treated_GK + treat_GD_main + treat_GD_huge + 
+#        assetsconsumption_asinh_R1 + 
+#        Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure + 
+#        Ldietarydi_x_Lassetscon + Lproductiv_x_Lassetscon,
+#      data = consumption_assets_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# consumption_assets_Bayesmodel_2 <- tidy(consumption_assets_Bayesmodel_2)
+# view(consumption_assets_Bayesmodel_2)
+# write_csv(consumption_assets_Bayesmodel_2, "variable_outcomes\\consumption_assets_bayes_m2.csv")
+```
+
+
+**Model 3:** Use a heirachical HLM model with villiage ID, leveled block in main model
+```{r, include=FALSE, echo=FALSE}
+# consumption_assets_Bayesmodel_3 <- 
+#   brm(formula = assetsconsumption_asinh | weights(samp_wgt) ~ 
+#        factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+#        assetsconsumption_asinh_R1 + 
+#        Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure + 
+#        Ldietarydi_x_Lassetscon + Lproductiv_x_Lassetscon +
+#        (1 | vid),
+#      data = consumption_assets_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# consumption_assets_Bayesmodel_3 <- tidy(consumption_assets_Bayesmodel_3)
+# view(consumption_assets_Bayesmodel_3)
+# write_csv(consumption_assets_Bayesmodel_3, "variable_outcomes\\consumption_assets_bayes_m3.csv")
+```
+
+
+**Model 4:** Use a heirachical HLM model with villiage ID and block
+```{r, include=FALSE}
+consumption_assets_Bayesmodel_4 <- 
+  brm(formula = assetsconsumption_asinh | weights(samp_wgt) ~ 
+       treated_GK + treat_GD_main + treat_GD_huge + 
+       assetsconsumption_asinh_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure + 
+       Ldietarydi_x_Lassetscon + Lproductiv_x_Lassetscon +
+       (1 | block) + (1 | vid),
+     data = consumption_assets_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+consumption_assets_Bayesmodel_4 <- tidy(consumption_assets_Bayesmodel_4)
+view(consumption_assets_Bayesmodel_4)
+write_csv(consumption_assets_Bayesmodel_4, "variable_outcomes\\consumption_assets_bayes_m4.csv")
+```
+
+
+## House Value - Secondary Outcome
+
+Load the *House Value* variables
+```{r, include=FALSE}
+dwelling_cost_data <- gik_hh_data %>%
+  select(hhid, round, vid, m0_district, block, eligible, samp_wgt,
+         treated_GK, treat_GD_huge, treat_GD_main, # treatment dummies
+         selfcostdwell_asinh, # Outcome variable
+         selfcostdwell_asinh_R1, # Baseline value of selfcostdwell_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, Lroomsnumb, Ldurablesexpenditure) %>%  # controls
+  filter(eligible == "eligible", round == 2)
+```
+
+
+**Frequentist model** used to approximate C&A's results
+```{r, include=FALSE}
+dwelling_cost_freqmodel <- 
+  lm_robust(selfcostdwell_asinh ~ treated_GK + treat_GD_main + treat_GD_huge +
+       selfcostdwell_asinh_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure,
+     fixed_effects = ~ factor(block),
+     se_type = "stata",
+     weights = samp_wgt,
+     clusters = vid,
+     data = dwelling_cost_data)
+
+summary(dwelling_cost_freqmodel)
+dwelling_cost_freqmodel <- tidy(dwelling_cost_freqmodel)
+view(dwelling_cost_freqmodel)
+write_csv(dwelling_cost_freqmodel, "variable_outcomes\\dwelling_cost_freq.csv")
+```
+
+
+**Model 1:** This is a basic model
+```{r, include=FALSE}
+dwelling_cost_Bayesmodel_1 <- 
+  brm(formula = selfcostdwell_asinh | weights(samp_wgt) ~ 
+       factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+       selfcostdwell_asinh_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure,
+     data = dwelling_cost_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+dwelling_cost_Bayesmodel_1 <- tidy(dwelling_cost_Bayesmodel_1)
+view(dwelling_cost_Bayesmodel_1)
+write_csv(dwelling_cost_Bayesmodel_1, "variable_outcomes\\dwelling_cost_bayes_m1.csv")
+```
+
+
+**Model 2:** This is the "naive" fixed effects model. Add a dummy variable for villiage ID, this is the closest thing to frq clustering without clustering (expect wider standard errros) NOTE: calculation time is very long. Adjust your expectation accordingly.
+```{r, include=FALSE, echo=FALSE}
+# dwelling_cost_Bayesmodel_2 <- 
+#   brm(formula = selfcostdwell_asinh | weights(samp_wgt) ~ 
+#        factor(block) + factor(vid) + treated_GK + treat_GD_main + treat_GD_huge + 
+#        selfcostdwell_asinh_R1 + 
+#        Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure,
+#      data = dwelling_cost_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# dwelling_cost_Bayesmodel_2 <- tidy(dwelling_cost_Bayesmodel_2)
+# view(dwelling_cost_Bayesmodel_2)
+# write_csv(dwelling_cost_Bayesmodel_2, "variable_outcomes\\dwelling_cost_bayes_m2.csv")
+```
+
+
+**Model 3:** Use a heirachical HLM model with villiage ID, leveled block in main model
+```{r, include=FALSE, echo=FALSE}
+# dwelling_cost_Bayesmodel_3 <- 
+#   brm(formula = selfcostdwell_asinh | weights(samp_wgt) ~ 
+#        factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+#        selfcostdwell_asinh_R1 + 
+#        Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure +
+#        (1 | vid),
+#      data = dwelling_cost_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# dwelling_cost_Bayesmodel_3 <- tidy(dwelling_cost_Bayesmodel_3)
+# view(dwelling_cost_Bayesmodel_3)
+# write_csv(dwelling_cost_Bayesmodel_3, "variable_outcomes\\dwelling_cost_bayes_m3.csv")
+```
+
+
+**Model 4:** Use a heirachical HLM model with villiage ID and block
+```{r, include=FALSE}
+dwelling_cost_Bayesmodel_4 <- 
+  brm(formula = selfcostdwell_asinh | weights(samp_wgt) ~ 
+       treated_GK + treat_GD_main + treat_GD_huge + 
+       selfcostdwell_asinh_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure + 
+       (1 | block) + (1 | vid),
+     data = dwelling_cost_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+dwelling_cost_Bayesmodel_4 <- tidy(dwelling_cost_Bayesmodel_4)
+view(dwelling_cost_Bayesmodel_4)
+write_csv(dwelling_cost_Bayesmodel_4, "variable_outcomes\\dwelling_cost_bayes_m4.csv")
+```
+
+
+## House Quality - Secondary Outcome
+
+Load the *House Quality* variables
+```{r, include=FALSE}
+# Set up the data
+housing_quality_data <- gik_hh_data %>%
+  select(hhid, round, vid, m0_district, block, eligible, samp_wgt,
+         treated_GK, treat_GD_huge, treat_GD_main, # treatment dummies
+         housing_quality, # Outcome variable
+         housing_quality_R1, # Baseline value of housing_quality, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, Lroomsnumb) %>%  # controls
+  filter(eligible == "eligible", round == 2)
+```
+
+
+**Frequentist model** used to approximate C&A's results
+```{r, include=FALSE}
+housing_quality_freqmodel <- 
+  lm_robust(housing_quality ~ treated_GK + treat_GD_main + treat_GD_huge +
+       housing_quality_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb,
+     fixed_effects = ~ factor(block),
+     se_type = "stata",
+     weights = samp_wgt,
+     clusters = vid,
+     data = housing_quality_data)
+
+summary(housing_quality_freqmodel)
+housing_quality_freqmodel <- tidy(housing_quality_freqmodel)
+view(housing_quality_freqmodel)
+write_csv(housing_quality_freqmodel, "variable_outcomes\\housing_quality_freq.csv")
+```
+
+
+**Model 1:** This is a basic model
+```{r, include=FALSE}
+housing_quality_Bayesmodel_1 <- 
+  brm(formula = housing_quality | weights(samp_wgt) ~ 
+       factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+       housing_quality_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb,
+     data = housing_quality_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+housing_quality_Bayesmodel_1 <- tidy(housing_quality_Bayesmodel_1)
+view(housing_quality_Bayesmodel_1)
+write_csv(housing_quality_Bayesmodel_1, "variable_outcomes\\housing_quality_bayes_m1.csv")
+```
+
+
+**Model 2:** This is the "naive" fixed effects model. Add a dummy variable for villiage ID, this is the closest thing to frq clustering without clustering (expect wider standard errros) NOTE: calculation time is very long. Adjust your expectation accordingly.
+```{r, include=FALSE, echo=FALSE}
+# housing_quality_Bayesmodel_2 <- 
+#   brm(formula = housing_quality | weights(samp_wgt) ~ 
+#        factor(block) + factor(vid) + treated_GK + treat_GD_main + treat_GD_huge + 
+#        housing_quality_R1 + 
+#        Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb,
+#      data = housing_quality_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# housing_quality_Bayesmodel_2 <- tidy(housing_quality_Bayesmodel_2)
+# view(housing_quality_Bayesmodel_2)
+# write_csv(housing_quality_Bayesmodel_2, "variable_outcomes\\housing_quality_bayes_m2.csv")
+```
+
+
+**Model 3:** Use a heirachical HLM model with villiage ID, leveled block in main model
+```{r, include=FALSE, echo=FALSE}
+# housing_quality_Bayesmodel_3 <- 
+#   brm(formula = housing_quality | weights(samp_wgt) ~ 
+#        factor(block) + treated_GK + treat_GD_main + treat_GD_huge + 
+#        housing_quality_R1 + 
+#        Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb +
+#        (1 | vid),
+#      data = housing_quality_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      cores = getOption("mc.cores", 1))
+# 
+# housing_quality_Bayesmodel_3 <- tidy(housing_quality_Bayesmodel_3)
+# view(housing_quality_Bayesmodel_3)
+# write_csv(housing_quality_Bayesmodel_3, "variable_outcomes\\housing_quality_bayes_m3.csv")
+```
+
+
+**Model 4:** Use a heirachical HLM model with villiage ID and block
+```{r, include=FALSE}
+housing_quality_Bayesmodel_4 <- 
+  brm(formula = housing_quality | weights(samp_wgt) ~ 
+       treated_GK + treat_GD_main + treat_GD_huge + 
+       housing_quality_R1 + 
+       Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb +
+       (1 | block) + (1 | vid),
+     data = housing_quality_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     cores = getOption("mc.cores", 1))
+
+housing_quality_Bayesmodel_4 <- tidy(housing_quality_Bayesmodel_4)
+view(housing_quality_Bayesmodel_4)
+write_csv(housing_quality_Bayesmodel_4, "variable_outcomes\\housing_quality_bayes_m4.csv")
+```
+
+
+
+
+
+
+
+
+## Section Break
+
+
+# Document Break
+
+
+
+

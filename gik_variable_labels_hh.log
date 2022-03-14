@@ -1,0 +1,937 @@
+-------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\joeam\Documents\Bayes\variable_labels1.log
+  log type:  text
+ opened on:   8 Mar 2021, 15:12:17
+
+. 
+. des
+
+Contains data from C:\Users\joeam\Downloads\deidentified_household_panel_clean.dta
+  obs:         5,506                          
+ vars:           633                          23 Jan 2021 11:53
+ size:    12,823,474                          
+-------------------------------------------------------------------------------------------
+              storage   display    value
+variable name   type    format     label      variable label
+-------------------------------------------------------------------------------------------
+hhid            str14   %14s                * Household ID
+round           float   %9.0g                 Survey round
+vid             double  %10.0g              * (mean) vid
+m0_district     str7    %9s                 * District:
+m8_1_a          int     %17.0g     m8_1_a   * Has your household purchased any wrap around
+                                                cloth for women (igitenge) over the
+m8_1_b          long    %12.0g              * How much did you spend on wrap around cloth
+                                                for women (igitenge) over the last 1
+m8_2_a          int     %17.0g     m8_2_a   * Has your household purchased any men's
+                                                garments over the last 12 months?
+m8_2_b          long    %12.0g              * How much did you spend on men's garments over
+                                                the last 12 months?
+m8_3_a          int     %17.0g     m8_3_a   * Has your household purchased any women's
+                                                garments over the last 12 months?
+m8_3_b          long    %12.0g              * How much did you spend on women's garments
+                                                over the last 12 months?
+m8_4_a          int     %17.0g     m8_4_a   * Has your household purchased any children's
+                                                clothing (excluding school uniform)
+m8_4_b          long    %12.0g              * How much did you spend on children's clothing
+                                                (excluding school uniform) over th
+m8_5_a          int     %17.0g     m8_5_a   * Has your household purchased any women's
+                                                tailoring over the last 12 months?
+m8_5_b          long    %8.0g               * How much did you spend on women's tailoring
+                                                over the last 12 months?
+m8_6_a          int     %17.0g     m8_6_a   * Has your household purchased any men's
+                                                footwear over the last 12 months?
+m8_6_b          long    %8.0g               * How much did you spend on men's footwear over
+                                                the last 12 months?
+m8_7_a          int     %17.0g     m8_7_a   * Has your household purchased any women's
+                                                footwear over the last 12 months?
+m8_7_b          int     %8.0g               * How much did you spend on women's footwear
+                                                over the last 12 months?
+m8_8_a          int     %17.0g     m8_8_a   * Has your household purchased any children's
+                                                footwear over the last 12 months?
+m8_8_b          long    %12.0g              * How much did you spend on children's footwear
+                                                over the last 12 months?
+m8_9_a          int     %17.0g     m8_9_a   * Has your household purchased any
+                                                international travel over the last 12
+                                                months?
+m8_9_b          long    %12.0g              * How much did you spend on international
+                                                travel over the last 12 months?
+m8_10_a         int     %17.0g     m8_10_a  * Has your household purchased any building
+                                                repairs (supplies) over the last 12 mo
+m8_10_b         long    %12.0g              * How much did you spend on building repairs
+                                                (supplies) over the last 12 months?
+m8_11_a         int     %17.0g     m8_11_a  * Has your household purchased any building
+                                                repair labor over the last 12 months?
+m8_11_b         long    %12.0g              * How much did you spend on building repair
+                                                labor over the last 12 months?
+m8_12_a         int     %17.0g     m8_12_a  * Has your household purchased any mattresses
+                                                over the last 12 months?
+m8_12_b         long    %12.0g              * How much did you spend on mattresses over the
+                                                last 12 months?
+m8_13_a         int     %17.0g     m8_13_a  * Has your household purchased any bed sheets
+                                                and pillows over the last 12 months?
+m8_13_b         long    %8.0g               * How much did you spend on bed sheets and
+                                                pillows over the last 12 months?
+m8_14_a         int     %17.0g     m8_14_a  * Has your household purchased any local travel
+                                                over the last 12 months?
+m8_14_b         long    %12.0g              * How much did you spend on local travel over
+                                                the last 12 months?
+m8_15_a         int     %17.0g     m8_15_a  * Has your household purchased any health
+                                                insurance (mutuelle, rama, mmi, etc) ove
+m8_15_b         long    %12.0g              * How much did you spend on health insurance
+                                                (mutuelle, rama, mmi, etc) over the l
+m8_16_a         byte    %17.0g     m8_16_a  * Has your household purchased any disinfectant
+                                                and cleaners over the last 4 weeks
+m8_16_b         long    %8.0g               * How much did you spend on disinfectant and
+                                                cleaners over the last 4 weeks?
+m8_17_a         int     %17.0g     m8_17_a  * Has your household purchased any shoe brushes
+                                                and polish over the last 4 weeks?
+m8_17_b         int     %8.0g               * How much did you spend on shoe brushes and
+                                                polish over the last 4 weeks?
+m8_18_a         int     %17.0g     m8_18_a  * Has your household purchased any wages for
+                                                household (domestic) help over the la
+m8_18_b         long    %8.0g               * How much did you spend on wages for household
+                                                (domestic) help over the last 4 we
+m8_19_a         int     %17.0g     m8_19_a  * Has your household purchased any spare parts
+                                                of motorcycle or bicycle over the l
+m8_19_b         long    %12.0g              * How much did you spend on spare parts of
+                                                motorcycle or bicycle over the last 4 w
+m8_20_a         byte    %17.0g     m8_20_a  * Has your household purchased any film and
+                                                developing equipment over the last 4 w
+m8_20_b         int     %8.0g               * How much did you spend on film and developing
+                                                equipment over the last 4 weeks?
+m8_21_a         int     %17.0g     m8_21_a  * Has your household purchased any passport
+                                                photos over the last 4 weeks?
+m8_21_b         int     %8.0g               * How much did you spend on passport photos
+                                                over the last 4 weeks?
+m8_22_a         int     %17.0g     m8_22_a  * Has your household purchased any men's
+                                                haircuts (barber) over the last 4 weeks?
+m8_22_b         int     %8.0g               * How much did you spend on men's haircuts
+                                                (barber) over the last 4 weeks?
+m8_23_a         int     %17.0g     m8_23_a  * Has your household purchased any women's
+                                                haircuts (simple haircut, stylist or tr
+m8_23_b         long    %12.0g              * How much did you spend on women's haircuts
+                                                (stylist & treatment) over the last 4
+m8_24_a         int     %17.0g     m8_24_a  * Has your household purchased any hair
+                                                products over the last 4 weeks?
+m8_24_b         int     %8.0g               * How much did you spend on hair products over
+                                                the last 4 weeks?
+m8_25_a         int     %17.0g     m8_25_a  * Has your household purchased any toothpaste
+                                                (and accessories) over the last 4 we
+m8_25_b         int     %8.0g               * How much did you spend on toothpaste (and
+                                                accessories) over the last 4 weeks?
+m8_26_a         int     %17.0g     m8_26_a  * Has your household purchased any sanitary
+                                                napkins over the last 4 weeks?
+m8_26_b         int     %8.0g               * How much did you spend on sanitary napkins
+                                                over the last 4 weeks?
+m8_27_a         int     %17.0g     m8_27_a  * Has your household purchased any
+                                                beauty/cosmetic products over the last 4
+                                                weeks?
+m8_27_b         int     %8.0g               * How much did you spend on beauty/cosmetic
+                                                products over the last 4 weeks?
+m8_28_a         int     %17.0g     m8_28_a  * Has your household purchased any spare parts
+                                                for vehicles over the last 4 weeks?
+m8_28_b         long    %8.0g               * How much did you spend on spare parts for
+                                                vehicles over the last 4 weeks?
+m8_29_a         int     %17.0g     m8_29_a  * Has your household purchased any labour for
+                                                repair of motorcycle or bicycle over
+m8_29_b         long    %8.0g               * How much did you spend on labour for repair
+                                                of motorcycle or bicycle over the la
+m8_30_a         int     %17.0g     m8_30_a  * Has your household purchased any labour for
+                                                vehicle repair over the last 4 weeks
+m8_30_b         long    %8.0g               * How much did you spend on labour for vehicle
+                                                repair over the last 4 weeks?
+m8_31_a         byte    %17.0g     m8_31_a  * Has your household purchased any
+                                                bicycles/motorcycles over the last 4 weeks?
+m8_31_b         long    %12.0g              * How much did you spend on
+                                                bicycles/motorcycles over the last 4 weeks?
+m8_32_a         int     %17.0g     m8_32_a  * Has your household purchased any generators
+                                                over the last 4 weeks?
+m8_32_b         int     %8.0g               * How much did you spend on generators over the
+                                                last 4 weeks?
+m8_33_a         int     %17.0g     m8_33_a  * Has your household spent any money on bail or
+                                                fines over the last 4 weeks?
+m8_33_b         long    %12.0g              * How much did you spend on bail/fines over the
+                                                last 4 weeks?
+m8_34_a         int     %17.0g     m8_34_a  * Has your household purchased any sound
+                                                systems over the last 4 weeks?
+m8_34_b         int     %8.0g               * How much did you spend on sound systems over
+                                                the last 4 weeks?
+m8_35_a         int     %17.0g     m8_35_a  * Has your household purchased any fishing
+                                                equipment over the last 4 weeks?
+m8_35_b         int     %8.0g               * How much did you spend on fishing equipment
+                                                over the last 4 weeks?
+m8_36_a         byte    %17.0g     m8_36_a  * Has your household purchased any
+                                                mills/grinding equipment over the last 4
+                                                weeks?
+m8_36_b         byte    %8.0g               * How much did you spend on mills/grinding
+                                                equipment over the last 4 weeks?
+m8_37_a         int     %17.0g     m8_37_a  * Has your household purchased any mobile
+                                                phones over the last 4 weeks?
+m8_37_b         long    %8.0g               * How much did you spend on mobile phones over
+                                                the last 4 weeks?
+m8_38_a         byte    %17.0g     m8_38_a  * Has your household purchased any sewing
+                                                machines over the last 4 weeks?
+m8_38_b         long    %8.0g               * How much did you spend on sewing machines
+                                                over the last 4 weeks?
+m8_39_a         byte    %17.0g     m8_39_a  * Has your household purchased any solar panels
+                                                over the last 4 weeks?
+m8_39_b         long    %8.0g               * How much did you spend on solar panels over
+                                                the last 4 weeks?
+m8_40_a         byte    %17.0g     m8_40_a  * Has your household purchased any pumps over
+                                                the last 4 weeks?
+m8_40_b         int     %8.0g               * How much did you spend on pumps over the last
+                                                4 weeks?
+m8_41_a         int     %17.0g     m8_41_a  * Has your household purchased any wheelbarrows
+                                                over the last 4 weeks?
+m8_41_b         byte    %8.0g               * How much did you spend on wheelbarrows over
+                                                the last 4 weeks?
+m8_42_a         int     %17.0g     m8_42_a  * Has your household purchased any batteries
+                                                over the last 4 weeks?
+m8_42_b         int     %8.0g               * How much did you spend on batteries over the
+                                                last 4 weeks?
+m8_43_a         int     %17.0g     m8_43_a  * Has your household purchased any local rice
+                                                over the last 7 days?
+m8_43_b         int     %8.0g               * How much did you spend on local rice over the
+                                                last 7 days?
+m8_44_a         int     %17.0g     m8_44_a  * Has your household purchased any imported
+                                                rice over the last 7 days?
+m8_44_b         int     %8.0g               * How much did you spend on imported rice over
+                                                the last 7 days?
+m8_45_a         int     %17.0g     m8_45_a  * Has your household purchased any corn (flour)
+                                                over the last 7 days?
+m8_45_b         long    %8.0g               * How much did you spend on corn (flour) over
+                                                the last 7 days?
+m8_46_a         int     %17.0g     m8_46_a  * Has your household purchased any sorghum
+                                                (flour) over the last 7 days?
+m8_46_b         int     %8.0g               * How much did you spend on sorghum (flour)
+                                                over the last 7 days?
+m8_47_a         int     %17.0g     m8_47_a  * Has your household purchased any carbonated
+                                                soft drinks over the last 7 days?
+m8_47_b         int     %8.0g               * How much did you spend on carbonated soft
+                                                drinks over the last 7 days?
+m8_48_a         int     %17.0g     m8_48_a  * Has your household purchased any beef meat
+                                                over the last 7 days?
+m8_48_b         int     %8.0g               * How much did you spend on beef meat over the
+                                                last 7 days?
+m8_49_a         int     %17.0g     m8_49_a  * Has your household purchased any peanut oil
+                                                over the last 7 days?
+m8_49_b         int     %8.0g               * How much did you spend on peanut oil over the
+                                                last 7 days?
+m8_50_a         int     %17.0g     m8_50_a  * Has your household purchased any palm oil
+                                                over the last 7 days?
+m8_50_b         int     %8.0g               * How much did you spend on palm oil over the
+                                                last 7 days?
+m8_51_a         int     %17.0g     m8_51_a  * Has your household purchased any bananas -
+                                                cooking (inyamunyo) over the last 7 d
+m8_51_b         long    %8.0g               * How much did you spend on bananas - cooking
+                                                (inyamunyo) over the last 7 days?
+m8_52_a         int     %17.0g     m8_52_a  * Has your household purchased any tomato over
+                                                the last 7 days?
+m8_52_b         int     %8.0g               * How much did you spend on tomato over the
+                                                last 7 days?
+m8_53_a         int     %17.0g     m8_53_a  * Has your household purchased any irish potato
+                                                over the last 7 days?
+m8_53_b         int     %8.0g               * How much did you spend on irish potato over
+                                                the last 7 days?
+m8_54_a         int     %17.0g     m8_54_a  * Has your household purchased any sweet potato
+                                                over the last 7 days?
+m8_54_b         int     %8.0g               * How much did you spend on sweet potato over
+                                                the last 7 days?
+m8_55_a         int     %17.0g     m8_55_a  * Has your household purchased any sugar
+                                                (local) over the last 7 days?
+m8_55_b         int     %8.0g               * How much did you spend on sugar (local) over
+                                                the last 7 days?
+m8_56_a         int     %17.0g     m8_56_a  * Has your household purchased any fresh milk
+                                                over the last 7 days?
+m8_56_b         int     %8.0g               * How much did you spend on fresh milk over the
+                                                last 7 days?
+m8_57_a         int     %17.0g     m8_57_a  * Has your household purchased any local
+                                                commercial beer over the last 7 days?
+m8_57_b         int     %8.0g               * How much did you spend on local commercial
+                                                beer over the last 7 days?
+m8_58_a         int     %17.0g     m8_58_a  * Has your household purchased any bar drinks
+                                                over the last 7 days?
+m8_58_b         int     %8.0g               * How much did you spend on bar drinks over the
+                                                last 7 days?
+m8_59_a         int     %17.0g     m8_59_a  * Has your household purchased any restaurant
+                                                food & drinks over the last 7 days?
+m8_59_b         int     %8.0g               * How much did you spend on restaurant food &
+                                                drinks over the last 7 days?
+m8_60_a         byte    %17.0g     m8_60_a  * Has your household consumed any local rice
+                                                from your own production over the cou
+m8_60_b         long    %8.0g               * How much local rice did you consume over the
+                                                past 7 days?
+m8_60_c         long    %8.0g               * At what price could you sell one unit of
+                                                local rice ?
+m8_61_a         int     %17.0g     m8_61_a  * Has your household consumed any corn (flour)
+                                                from your own production over the c
+m8_61_b         long    %8.0g               * How much corn (flour) did you consume over
+                                                the past 7 days?
+m8_61_c         int     %8.0g               * At what price could you sell one unit of corn
+                                                (flour) ?
+m8_62_a         int     %17.0g     m8_62_a  * Has your household consumed any sorghum
+                                                (flour) from your own production over th
+m8_62_b         long    %8.0g               * How much sorghum (flour) did you consume over
+                                                the past 7 days?
+m8_62_c         int     %8.0g               * At what price could you sell one unit of
+                                                sorghum (flour) ?
+m8_63_a         int     %17.0g     m8_63_a  * Has your household consumed any beef meat
+                                                from your own production over the cour
+m8_63_b         int     %8.0g               * How much beef meat did you consume over the
+                                                past 7 days?
+m8_63_c         int     %8.0g               * At what price could you sell one unit of beef
+                                                meat ?
+m8_64_a         int     %17.0g     m8_64_a  * Has your household consumed any fresh milk
+                                                from your own production over the cou
+m8_64_b         int     %8.0g               * How much fresh milk did you consume over the
+                                                past 7 days?
+m8_64_c         int     %8.0g               * At what price could you sell one unit of
+                                                fresh milk?
+m8_65_a         int     %17.0g     m8_65_a  * Has your household consumed any peanut oil
+                                                from your own production over the cou
+m8_65_b         int     %8.0g               * How much peanut oil did you consume over the
+                                                past 7 days?
+m8_65_c         int     %8.0g               * At what price could you sell one unit of
+                                                peanut oil ?
+m8_66_a         int     %17.0g     m8_66_a  * Has your household consumed any palm oil from
+                                                your own production over the cours
+m8_66_b         int     %8.0g               * How much palm oil did you consume over the
+                                                past 7 days?
+m8_66_c         int     %8.0g               * At what price could you sell one unit of palm
+                                                oil ?
+m8_67_a         int     %17.0g     m8_67_a  * Has your household consumed any bananas -
+                                                cooking (inyamunyo) from your own prod
+m8_67_b         long    %8.0g               * How much bananas - cooking (inyamunyo) did
+                                                you consume over the past 7 days?
+m8_67_c         int     %8.0g               * At what price could you sell one unit of
+                                                banana - cooking (inyamunyo) ?
+m8_68_a         int     %17.0g     m8_68_a  * Has your household consumed any tomato from
+                                                your own production over the course
+m8_68_b         int     %8.0g               * How much tomato did you consume over the past
+                                                7 days?
+m8_68_c         int     %8.0g               * At what price could you sell one unit of
+                                                tomato?
+m8_69_a         int     %17.0g     m8_69_a  * Has your household consumed any irish potato
+                                                from your own production over the c
+m8_69_b         long    %12.0g              * How much irish potato did you consume over
+                                                the past 7 days?
+m8_69_c         int     %8.0g               * At what price could you sell one unit of
+                                                irish potato ?
+m8_70_a         int     %17.0g     m8_70_a  * Has your household consumed any sweet potato
+                                                from your own production over the c
+m8_70_b         long    %8.0g               * How much sweet potato did you consume over
+                                                the past 7 days?
+m8_70_c         long    %12.0g              * At what price could you sell one unit of
+                                                sweet potato ?
+m9_cereals      int     %17.0g     m9_cereals
+                                            * Were any cereals consumed yesterday by anyone
+                                                in your household?
+m9_tubers       int     %17.0g     m9_tubers
+                                            * Were any white roots and tubers consumed
+                                                yesterday by anyone in your household?
+m9_vitaveg      int     %17.0g     m9_vitaveg
+                                            * Were any vitamin a rich vegetables and tubers
+                                                consumed yesterday by anyone in yo
+m9_leafyveg     int     %17.0g     m9_leafyveg
+                                            * Were any dark green leafy vegetables consumed
+                                                yesterday by anyone in your househ
+m9_otherveg     int     %17.0g     m9_otherveg
+                                            * Were any other vegetables consumed yesterday
+                                                by anyone in your household?
+m9_vitaafruits  int     %17.0g     m9_vitaafruits
+                                            * Were any vitamin a rich fruits consumed
+                                                yesterday by anyone in your household?
+m9_otherfruits  int     %17.0g     m9_otherfruits
+                                            * Were any other fruits consumed yesterday by
+                                                anyone in your household?
+m9_organmeat    int     %17.0g     m9_organmeat
+                                            * Were any organ meat consumed yesterday by
+                                                anyone in your household?
+m9_fleshmeat    int     %17.0g     m9_fleshmeat
+                                            * Were any flesh meats consumed yesterday by
+                                                anyone in your household?
+m9_eggs         int     %17.0g     m9_eggs  * Were any eggs consumed yesterday by anyone in
+                                                your household?
+m9_fish         int     %17.0g     m9_fish  * Were any fish and seafood consumed yesterday
+                                                by anyone in your household?
+m9_legumes      int     %17.0g     m9_legumes
+                                            * Were any legumes, nuts and seeds consumed
+                                                yesterday by anyone in your household?
+m9_milk         int     %17.0g     m9_milk  * Were any milk and milk products consumed
+                                                yesterday by anyone in your household?
+m9_oils         int     %17.0g     m9_oils  * Were any oils and fats consumed yesterday by
+                                                anyone in your household?
+m9_sweets       int     %17.0g     m9_sweets
+                                            * Were any sweets consumed yesterday by anyone
+                                                in your household?
+m9_spices       int     %17.0g     m9_spices
+                                            * Were any spices, condiments, beverages
+                                                consumed yesterday by anyone in your hous
+m9_outside      int     %17.0g     m9_outside
+                                            * Did you or anyone in your household eat
+                                                anything (meal or snack) OUTSIDE the hom
+lottery_pick1   str7    %9s                   
+lottery_pick2   str7    %9s                   
+durablesexpen~e float   %9.0g                 Durables expenditure (12-month recall)
+freqexpenditure float   %9.0g                 Frequent expnditures (4-week recall)
+foodexpenditure float   %9.0g                 Food expenditure (weekly recall)
+foodownconsu~on float   %9.0g                 Food consumption-value own production (weekly
+                                                recall)
+consumption     float   %9.0g                 Household monthly consumption
+dietarydivers~y float   %9.0g                 Household dietary diversity score
+assetslivestock float   %9.0g                 Total value livestock owned
+assetsproduc~on float   %9.0g                 Non-livestock productive asset value
+productiveass~s float   %9.0g                 Value of all productive assets (livestock and
+                                                non-livestock)
+assetsconsum~on float   %9.0g                 Consumption assets, total value, RWF
+owndwelling     float   %9.0g                 Own dwelling
+dwellingvalue   float   %9.0g                 Value of dwelling if owned
+savingsstock    float   %9.0g                 Value of savings stock
+borrowingstock  float   %9.0g                 Value of borrowing stock
+correct_food    float   %9.0g                 
+incorrect_food  float   %9.0g                 
+know_food_index float   %9.0g                 Know signs someone not having enough food
+                                                (proportion correct answers)
+know_undernou~x float   %9.0g                 Know reasons people are undernourished
+                                                (proportion correct answers)
+know_food2_in~x float   %9.0g                 Know signs someone not having enough food
+                                                (proportion correct answers)
+know_growing_~x float   %9.0g                 Know how find out if the baby is growing well
+                                                or not(proportion correct answers)
+know_weight_i~x float   %9.0g                 Know meaning the baby is not gaining weight
+                                                (proportion correct answers)
+know_undernut~x float   %9.0g                 Know prevent undernutrition among infants
+                                                (proportion correct answers)
+know_sickness~x float   %9.0g                 Know avoid sickness from germs from human or
+                                                animal faeces(proportion correct an
+know_wash_index float   %9.0g                 Know when washing hands (proportion correct
+                                                answers)
+correct_diarr~a float   %9.0g                 
+incorrect_dia~a float   %9.0g                 
+know_diarrhea~x float   %9.0g                 Know actions to prevent diarrhea (proportion
+                                                correct answers)
+washloc         float   %9.0g                 HH has location to wash hands
+toilet          float   %9.0g                 HH doesn't share the toilet
+treatwater      float   %9.0g                 HH treats drinking water
+washhands       float   %9.0g                 Always wash hands before eating
+latrineuse      float   %9.0g                 Always use latrine vs open defecation
+selfcostdwell   float   %9.0g                 Self-reported cost of current dwelling
+wallmaterial    float   %9.0g                 Walls of concrete, wood, or iron sheets
+roofmaterial    float   %9.0g                 Roof iron, clay, concrete or plastic sheeting
+roomsnumb       float   %9.0g                 Number of rooms
+self_notrust    float   %9.0g                 
+others_notrust  float   %9.0g                 
+thieves         float   %9.0g                 
+relatives       float   %9.0g                 
+investor        float   %9.0g                 
+regret_purchase float   %9.0g                 Respondent reports regretting purchase in
+                                                past month
+waste_money     float   %9.0g                 Respondent reports having problems with
+                                                wasting money
+spouse_conflict float   %9.0g                 Respondent is married and has conflict w
+                                                spouse over money
+spouse_wastes   float   %9.0g                 Respondent is married and says spouse wastes
+                                                money
+spouse_impuls~e float   %9.0g                 Respondent is married and says spouse is
+                                                impulsive
+spouse_irresp~e float   %9.0g                 Respondent is married and says spouse is
+                                                irresponsible
+lack_self_con~l float   %9.0g                 Respondent reports lacking self control by
+                                                any metric - don't keep cash regret p
+lack_other_co~l float   %9.0g                 Respondent lacks other control by any metric
+                                                - spouse conflict personality and t
+digit_correct   float   %9.0g                 Highest number of digits correctly recalled
+                                                in digitspan test
+lottery_now_RA  float   %9.0g                 Risk Aversion over lottery choice for today
+lottery_90dys~A float   %9.0g                 Risk Aversion over lottery choice in 90 days
+raven_correct   float   %9.0g                 
+eligible        float   %12.0g     iseligible
+                                              Household is IPA-defined eligible
+ubudehe         float   %10.0g                (mean) ubudehe
+hhfemale        float   %9.0g                 Female household head
+hhmarried       float   %9.0g                 HH head is married or in union
+hhmember        float   %9.0g                 Number of household members
+hh_agriculture  float   %9.0g                 HH does engage in agriculture at baseline
+hh_wage_worker  float   %9.0g                 HH has wage worker at baseline
+hh_microenter~e float   %9.0g                 HH does operate microenterprise at baseline
+hh_SILC         float   %9.0g                 HH does participate in SILC at baseline
+hhage           float   %9.0g                 Age of household head in years
+hh_head_schoo~g float   %9.0g                 Household head is in school
+hh_av_schooling float   %9.0g                 
+hh_av_age       float   %9.0g                 Average age of household members
+hh_dep_ratio    float   %9.0g                 HH dependency ratio (#old + #young)/(#hh
+                                                members)
+hh_youth        float   %9.0g                 Number of people 18 and under in HH
+gd_treat        str5    %9s                   
+treatment       float   %9.0g      treatments
+                                              
+nEligible       float   %9.0g                 Number of Eligibles in Village
+nIneligible     float   %9.0g                 Number of Ineligibles in Village
+samplingproba~y float   %9.0g                 
+samp_wgt        float   %9.0g                 Sampling weight
+vill_size       float   %9.0g                 Number of households in village
+vill_eligible~o float   %9.0g                 Fraction of village defined eligible by IPA
+m0_resp_id      str7    %9s                   
+vns_participate byte    %8.0g      vns_participate
+                                            * Has any member of this household participated
+                                                in a nutrition education session i
+cooking_demo    byte    %8.0g      cooking_demo
+                                            * Has any member of this household participated
+                                                in a cooking demonstration in the
+ffls_garden     byte    %8.0g      ffls_garden
+                                            * Does this community have a Farmer Field
+                                                Learning School with an improved kitchen
+ffls_particip~e byte    %8.0g      ffls_participate
+                                            * Has any member of this household participated
+                                                in a training session at this Farm
+ffls_crops      str7    %9s                 * Which crops are grown in this Farmer Field
+                                                Learning School garden?
+ffls_planted    byte    %14.0g     ffls_planted
+                                            * In which month was this demonstration garden
+                                                first planted?
+ffls_harvest    byte    %8.0g      ffls_harvest
+                                            * Has this FFLS garden produced a harvest yet?
+live_received   byte    %8.0g      live_received
+                                            * Did you receive any livestock form Gikuriro
+                                                program?
+livestocktype   str5    %9s                 * If yes, what did you receive?
+gd_recipient_R2 byte    %8.0g      gd_recipient
+                                            * Did a member of your household receive a
+                                                monetary household grant from GiveDirec
+gd_flowlumpsum  byte    %42.0g     gd_flowlumpsum
+                                            * Did your household receive this transfer up
+                                                front, or on a continuous basis over
+SILC_GK_parti~e float   %9.0g                 
+treat_GD        float   %9.0g                 GiveDirectly treatment village
+treat_GK        float   %9.0g                 Gikuriro treatment village
+treat_any       float   %9.0g                 Village gets either treatment
+treat_control   float   %9.0g                 Control village
+gd_recipient    byte    %8.0g                 
+treated_GD      float   %9.0g                 Panel dummy for _GD treatment, only on in R2
+treated_GK      float   %9.0g                 Panel dummy for _GK treatment, only on in R2
+R2              float   %9.0g                 Dummy for Round 2
+block           float   %9.0g                 Blocks within which the randomization was
+                                                conducted
+segovia_id      str20   %20s                  Segovia ID
+transferamount  double  %10.0g                Actual HH treatment amount from GD data
+registrationm.. str7    %9s                   registration##month1_preferences_choice
+r~2_preferenc~c str7    %9s                   registration##month2_preferences_choice
+r~3_preferenc~c str7    %9s                   registration##month3_preferences_choice
+r~4_preferenc~c str7    %9s                   registration##month4_preferences_choice
+r~5_preferenc~c str7    %9s                   registration##month5_preferences_choice
+r~6_preferenc~c str7    %9s                   registration##month6_preferences_choice
+r~7_preferenc~c str7    %9s                   registration##month7_preferences_choice
+r~8_preferenc~c str7    %9s                   registration##month8_preferences_choice
+r~9_preferenc~c str7    %9s                   registration##month9_preferences_choice
+r~0_preferenc~_ str7    %9s                   registration##month10_preferences_choice
+r~1_preferenc~_ str7    %9s                   registration##month11_preferences_choice
+r~2_preferenc~_ str7    %9s                   registration##month12_preferences_choice
+treatmentbag_~l str7    %9s                   registration##treatment_bag
+GD_treatment_~d str7    %9s                   Actual treatment received in GD (lump sum or
+                                                flow, choice resolved to one or oth
+tranche         long    %9.0g      tranches   Tranche
+LS_choice_ever  float   %9.0g                 Chose LS in Any Month
+LS_choice_alw~s float   %9.0g                 Chose LS in Every Month
+LS_choice_mean  float   %9.0g                 Fraction of months in which chose LS
+LS_choice       float   %9.0g                 Chose LS in the first month
+LS_impatient    float   %9.0g                 Individual ever switches from LS to flow as
+                                                time becomes more distant
+received_GD     float   %9.0g                 Dummy in GD treatment for whether appear in
+                                                GD data as treated
+elig_nonc       float   %9.0g                 
+treatmentbag    str7    %9s                   Individual treatment status from GD data
+treat_GD_lump~m float   %9.0g                 Lump Sum treatment within GD arm
+treat_GD_choice float   %9.0g                 Choice treatment within GD arm
+treat_GD_flow   float   %9.0g                 Flow treatment within GD arm
+treatment_cell  str8    %9s                   Complete categorical variable for
+                                                village-level treatment status
+treat_GD_huge   float   %9.0g                 Huge GD treatment dummy
+treat_GD_mid    float   %9.0g                 
+treat_GD_upper  float   %9.0g                 
+treat_GD_main   float   %9.0g                 Low-mid-upper GD treatment dummy
+sample_panel    float   %9.0g                 Household present in both rounds
+attrites        float   %9.0g                 Household attrites in R2
+ubudehe_1       float   %9.0g                 HH in Ubudehe 1 cat (3 & 4 omitted)
+ubudehe_2       float   %9.0g                 HH in Ubudehe 2 cat (3 & 4 omitted)
+health_knowle~e float   %9.0g                 Health Knowledge Index
+sanitation_pr~s float   %9.0g                 Sanitation Practices Index
+housing_quality float   %9.0g                 Housing Quality Index
+consumption_win float   %9.0g                 
+wealth_win      float   %9.0g                 
+borrowingstoc~n float   %9.0g                 
+savingsstock_~n float   %9.0g                 
+freqexpenditu~n float   %9.0g                 
+foodexpenditu~n float   %9.0g                 
+durablesexpen~n float   %9.0g                 
+foodownconsu~in float   %9.0g                 
+productiveass~n float   %9.0g                 
+assetslivesto~n float   %9.0g                 
+assetsconsum~in float   %9.0g                 
+assetsproduc~in float   %9.0g                 
+dwellingvalue~n float   %9.0g                 
+selfcostdwell~n float   %9.0g                 
+wealth          float   %9.0g                 Net non-land household wealth
+consumption_a~h float   %9.0g                 
+wealth_asinh    float   %9.0g                 
+borrowingstoc~h float   %9.0g                 
+savingsstock_~h float   %9.0g                 
+freqexpenditu~h float   %9.0g                 
+foodexpenditu~h float   %9.0g                 
+durablesexpen~h float   %9.0g                 
+foodownconsum~h float   %9.0g                 
+productiveass~h float   %9.0g                 
+assetslivesto~h float   %9.0g                 
+assetsconsump~h float   %9.0g                 
+assetsproduct~h float   %9.0g                 
+dwellingvalue~h float   %9.0g                 
+selfcostdwell~h float   %9.0g                 
+consumption_a~1 float   %9.0g                 Baseline value of consumption_asinh, present
+                                                in both rounds
+dietarydivers~1 float   %9.0g                 Baseline value of dietarydiversity, present
+                                                in both rounds
+wealth_asinh_R1 float   %9.0g                 Baseline value of wealth_asinh, present in
+                                                both rounds
+borrowingstoc~1 float   %9.0g                 Baseline value of borrowingstock_asinh,
+                                                present in both rounds
+savingsstock_~1 float   %9.0g                 Baseline value of savingsstock_asinh, present
+                                                in both rounds
+health_knowle~1 float   %9.0g                 Baseline value of health_knowledge, present
+                                                in both rounds
+sanitation_pr~1 float   %9.0g                 Baseline value of sanitation_practices,
+                                                present in both rounds
+productiveass~1 float   %9.0g                 Baseline value of productiveassets_asinh,
+                                                present in both rounds
+assetsconsump~1 float   %9.0g                 Baseline value of assetsconsumption_asinh,
+                                                present in both rounds
+selfcostdwell~1 float   %9.0g                 Baseline value of selfcostdwell_asinh,
+                                                present in both rounds
+housing_quali~1 float   %9.0g                 Baseline value of housing_quality, present in
+                                                both rounds
+hh_consumptio~h float   %9.0g                 
+hh_wealth_asinh float   %9.0g                 
+hh_productive~h float   %9.0g                 
+hh_assetscons~h float   %9.0g                 
+hh_housing_qu~y float   %9.0g                 
+int_GD_hh_agr~e float   %9.0g                 Interaction between treat_GD and covariate
+                                                hh_agriculture
+int_GK_hh_agr~e float   %9.0g                 Interaction between treat_GK and covariate
+                                                hh_agriculture
+int_GD_hh_wag~r float   %9.0g                 Interaction between treat_GD and covariate
+                                                hh_wage_worker
+int_GK_hh_wag~r float   %9.0g                 Interaction between treat_GK and covariate
+                                                hh_wage_worker
+int_GD_hh_mic~e float   %9.0g                 Interaction between treat_GD and covariate
+                                                hh_microenterprise
+int_GK_hh_mic~e float   %9.0g                 Interaction between treat_GK and covariate
+                                                hh_microenterprise
+int_GD_hh_SILC  float   %9.0g                 Interaction between treat_GD and covariate
+                                                hh_SILC
+int_GK_hh_SILC  float   %9.0g                 Interaction between treat_GK and covariate
+                                                hh_SILC
+int_GD_vill_e~o float   %9.0g                 Interaction between treat_GD and covariate
+                                                vill_eligible_ratio
+int_GK_vill_e~o float   %9.0g                 Interaction between treat_GK and covariate
+                                                vill_eligible_ratio
+int_GD_hhage    float   %9.0g                 Interaction between treat_GD and covariate
+                                                hhage
+int_GK_hhage    float   %9.0g                 Interaction between treat_GK and covariate
+                                                hhage
+int_GD_hh_hea~g float   %9.0g                 Interaction between treat_GD and covariate
+                                                hh_head_schooling
+int_GK_hh_hea~g float   %9.0g                 Interaction between treat_GK and covariate
+                                                hh_head_schooling
+int_GD_hh_dep~o float   %9.0g                 Interaction between treat_GD and covariate
+                                                hh_dep_ratio
+int_GK_hh_dep~o float   %9.0g                 Interaction between treat_GK and covariate
+                                                hh_dep_ratio
+int_GD_hhmember float   %9.0g                 Interaction between treat_GD and covariate
+                                                hhmember
+int_GK_hhmember float   %9.0g                 Interaction between treat_GK and covariate
+                                                hhmember
+int_GD_ubudeh~1 float   %9.0g                 Interaction between treat_GD and covariate
+                                                ubudehe_1
+int_GK_ubudeh~1 float   %9.0g                 Interaction between treat_GK and covariate
+                                                ubudehe_1
+int_GD_ubudeh~2 float   %9.0g                 Interaction between treat_GD and covariate
+                                                ubudehe_2
+int_GK_ubudeh~2 float   %9.0g                 Interaction between treat_GK and covariate
+                                                ubudehe_2
+crs_reports_t~d float   %9.0g                 
+gk_participat~y float   %9.0g                 
+gk_participat~l float   %9.0g                 
+alpha           float   %8.0g                 
+beta            float   %8.0g                 
+delta           float   %8.0g                 
+sigma           float   %8.0g                 
+crit            float   %8.0g                 
+alpha_win01     float   %8.0g                 alpha, Winsorized fraction .01
+alpha_win05     float   %8.0g                 alpha, Winsorized fraction .05
+alpha_win10     float   %8.0g                 alpha, Winsorized fraction .1
+beta_win01      float   %8.0g                 beta, Winsorized fraction .01
+beta_win05      float   %8.0g                 beta, Winsorized fraction .05
+beta_win10      float   %8.0g                 beta, Winsorized fraction .1
+delta_win01     float   %8.0g                 delta, Winsorized fraction .01
+delta_win05     float   %8.0g                 delta, Winsorized fraction .05
+delta_win10     float   %8.0g                 delta, Winsorized fraction .1
+sigma_win01     float   %8.0g                 sigma, Winsorized fraction .01
+sigma_win05     float   %8.0g                 sigma, Winsorized fraction .05
+sigma_win10     float   %8.0g                 sigma, Winsorized fraction .1
+outlier         float   %9.0g                 
+alpha_outlier   float   %9.0g                 
+beta_outlier    float   %9.0g                 
+delta_outlier   float   %9.0g                 
+sigma_outlier   float   %9.0g                 
+present_biased  float   %9.0g                 
+impatient       float   %9.0g                 
+risk_averse     float   %9.0g                 
+alphaL          float   %9.0g                 alpha
+betaL           double  %10.0g                beta
+deltaL          double  %10.0g                delta
+alphaN          float   %9.0g                 alpha
+betaN           float   %9.0g                 beta
+deltaN          double  %10.0g                delta
+alphaT          float   %9.0g                 alpha
+betaT           float   %9.0g                 beta
+deltaT          double  %10.0g                delta
+presbiasL       float   %9.0g                 
+discountL       float   %9.0g                 
+presbiasN       float   %9.0g                 
+discountN       float   %9.0g                 
+presbiasT       float   %9.0g                 
+discountT       float   %9.0g                 
+inconsistent_~n float   %9.0g                 
+impatient_bin   float   %9.0g                 
+monotonic       float   %9.0g                 
+alphaL_win01    float   %9.0g                 alphaL, Winsorized fraction .01
+alphaL_win05    float   %9.0g                 alphaL, Winsorized fraction .05
+alphaL_win10    float   %9.0g                 alphaL, Winsorized fraction .1
+alphaN_win01    float   %9.0g                 alphaN, Winsorized fraction .01
+alphaN_win05    float   %9.0g                 alphaN, Winsorized fraction .05
+alphaN_win10    float   %9.0g                 alphaN, Winsorized fraction .1
+alphaT_win01    float   %9.0g                 alphaT, Winsorized fraction .01
+alphaT_win05    float   %9.0g                 alphaT, Winsorized fraction .05
+alphaT_win10    float   %9.0g                 alphaT, Winsorized fraction .1
+betaL_win01     double  %10.0g                betaL, Winsorized fraction .01
+betaL_win05     double  %10.0g                betaL, Winsorized fraction .05
+betaL_win10     double  %10.0g                betaL, Winsorized fraction .1
+betaN_win01     float   %9.0g                 betaN, Winsorized fraction .01
+betaN_win05     float   %9.0g                 betaN, Winsorized fraction .05
+betaN_win10     float   %9.0g                 betaN, Winsorized fraction .1
+betaT_win01     float   %9.0g                 betaT, Winsorized fraction .01
+betaT_win05     float   %9.0g                 betaT, Winsorized fraction .05
+betaT_win10     float   %9.0g                 betaT, Winsorized fraction .1
+deltaL_win01    double  %10.0g                deltaL, Winsorized fraction .01
+deltaL_win05    double  %10.0g                deltaL, Winsorized fraction .05
+deltaL_win10    double  %10.0g                deltaL, Winsorized fraction .1
+deltaN_win01    double  %10.0g                deltaN, Winsorized fraction .01
+deltaN_win05    double  %10.0g                deltaN, Winsorized fraction .05
+deltaN_win10    double  %10.0g                deltaN, Winsorized fraction .1
+deltaT_win01    double  %10.0g                deltaT, Winsorized fraction .01
+deltaT_win05    double  %10.0g                deltaT, Winsorized fraction .05
+deltaT_win10    double  %10.0g                deltaT, Winsorized fraction .1
+present_biasedL float   %9.0g                 
+impatientL      float   %9.0g                 
+risk_averseL    float   %9.0g                 
+present_biasedN float   %9.0g                 
+impatientN      float   %9.0g                 
+risk_averseN    float   %9.0g                 
+present_biasedT float   %9.0g                 
+impatientT      float   %9.0g                 
+risk_averseT    float   %9.0g                 
+Lconsumption_~h float   %9.0g                 L.
+Ldietarydiver~y float   %9.0g                 L.Household dietary diversity score
+Lwealth_asinh   float   %9.0g                 L.
+Lborrowingsto~h float   %9.0g                 L.
+Lsavingsstock~h float   %9.0g                 L.
+Lhealth_knowl~e float   %9.0g                 L.Health Knowledge Index
+Lsanitation_p~s float   %9.0g                 L.Sanitation Practices Index
+Lproductiveas~h float   %9.0g                 L.
+Lassetsconsum~h float   %9.0g                 L.
+Lselfcostdwel~h float   %9.0g                 L.
+Lhousing_qual~y float   %9.0g                 L.Housing Quality Index
+Lfreqexpendit~h float   %9.0g                 L.
+Lfoodexpendit~h float   %9.0g                 L.
+Ldurablesexpe~h float   %9.0g                 L.
+Lfoodownconsu~h float   %9.0g                 L.
+Ldwellingvalu~h float   %9.0g                 L.
+Lowndwelling    float   %9.0g                 L.Own dwelling
+Lhhmember       float   %9.0g                 L.Number of household members
+Lhhfemale       float   %9.0g                 L.Female household head
+Lhhmarried      float   %9.0g                 L.HH head is married or in union
+Lhh_agriculture float   %9.0g                 L.HH does engage in agriculture at baseline
+Lhh_wage_worker float   %9.0g                 L.HH has wage worker at baseline
+Lhh_microente~e float   %9.0g                 L.HH does operate microenterprise at baseline
+Lhh_SILC        float   %9.0g                 L.HH does participate in SILC at baseline
+Lvill_size      float   %9.0g                 L.Number of households in village
+Lvill_eligibl~o float   %9.0g                 L.Fraction of village defined eligible by IPA
+Lhhage          float   %9.0g                 L.Age of household head in years
+Lhh_av_age      float   %9.0g                 L.Average age of household members
+Lhh_av_school~g float   %9.0g                 L.
+Lhh_head_scho~g float   %9.0g                 L.Household head is in school
+Lhh_dep_ratio   float   %9.0g                 L.HH dependency ratio (#old + #young)/(#hh
+                                                members)
+Lubudehe        float   %9.0g                 L.(mean) ubudehe
+Lhh_consumpti~h float   %9.0g                 L.
+Lhh_wealth_as~h float   %9.0g                 L.
+Lhh_productiv~h float   %9.0g                 L.
+Lhh_assetscon~h float   %9.0g                 L.
+Lhh_housing_q~y float   %9.0g                 L.
+Lubudehe_1      float   %9.0g                 L.HH in Ubudehe 1 cat (3 & 4 omitted)
+Lubudehe_2      float   %9.0g                 L.HH in Ubudehe 2 cat (3 & 4 omitted)
+Lconsumption    float   %9.0g                 L.Household monthly consumption
+Lwealth         float   %9.0g                 L.Net non-land household wealth
+Lwashloc        float   %9.0g                 L.HH has location to wash hands
+Lwashhands      float   %9.0g                 L.Always wash hands before eating
+Ltreatwater     float   %9.0g                 L.HH treats drinking water
+Ltoilet         float   %9.0g                 L.HH doesn't share the toilet
+Llatrineuse     float   %9.0g                 L.Always use latrine vs open defecation
+Lselfcostdwell  float   %9.0g                 L.Self-reported cost of current dwelling
+Lwallmaterial   float   %9.0g                 L.Walls of concrete, wood, or iron sheets
+Lroofmaterial   float   %9.0g                 L.Roof iron, clay, concrete or plastic
+                                                sheeting
+Lroomsnumb      float   %9.0g                 L.Number of rooms
+Lfreqexpendit~e float   %9.0g                 L.Frequent expnditures (4-week recall)
+Lfoodexpendit~e float   %9.0g                 L.Food expenditure (weekly recall)
+Ldurablesexpe~e float   %9.0g                 L.Durables expenditure (12-month recall)
+Lfoodownconsu~n float   %9.0g                 L.Food consumption-value own production
+                                                (weekly recall)
+Lproductiveas~s float   %9.0g                 L.Value of all productive assets (livestock
+                                                and non-livestock)
+Lassetslivest~k float   %9.0g                 L.Total value livestock owned
+Lassetsconsum~n float   %9.0g                 L.Consumption assets, total value, RWF
+Lassetsproduc~n float   %9.0g                 L.Non-livestock productive asset value
+Ldwellingvalue  float   %9.0g                 L.Value of dwelling if owned
+Lsavingsstock   float   %9.0g                 L.Value of savings stock
+Lborrowingstock float   %9.0g                 L.Value of borrowing stock
+Lknow_food_in~x float   %9.0g                 L.Know signs someone not having enough food
+                                                (proportion correct answers)
+Lknow_diarrhe~x float   %9.0g                 L.Know actions to prevent diarrhea
+                                                (proportion correct answers)
+Lcorrect_food   float   %9.0g                 L.
+Lincorrect_food float   %9.0g                 L.
+Lcorrect_diar~a float   %9.0g                 L.
+Lincorrect_di~a float   %9.0g                 L.
+Lknow_underno~x float   %9.0g                 L.Know reasons people are undernourished
+                                                (proportion correct answers)
+Lknow_food2_i~x float   %9.0g                 L.Know signs someone not having enough food
+                                                (proportion correct answers)
+Lknow_growing~x float   %9.0g                 L.Know how find out if the baby is growing
+                                                well or not(proportion correct answer
+Lknow_weight_~x float   %9.0g                 L.Know meaning the baby is not gaining weight
+                                                (proportion correct answers)
+Lknow_undernu~x float   %9.0g                 L.Know prevent undernutrition among infants
+                                                (proportion correct answers)
+Lknow_sicknes~x float   %9.0g                 L.Know avoid sickness from germs from human
+                                                or animal faeces(proportion correct
+Lknow_wash_in~x float   %9.0g                 L.Know when washing hands (proportion correct
+                                                answers)
+Lconsumption_~2 float   %9.0g                 
+Lconsumption_~3 float   %9.0g                 
+Ldietarydiver~2 float   %9.0g                 
+Ldietarydiver~3 float   %9.0g                 
+Lwealth_asinh2  float   %9.0g                 
+Lwealth_asinh3  float   %9.0g                 
+Lborrowingsto~2 float   %9.0g                 
+Lborrowingsto~3 float   %9.0g                 
+Lsavingsstock~2 float   %9.0g                 
+Lsavingsstock~3 float   %9.0g                 
+Lhealth_knowl~2 float   %9.0g                 
+Lhealth_knowl~3 float   %9.0g                 
+Lsanitation_p~2 float   %9.0g                 
+Lsanitation_p~3 float   %9.0g                 
+Lproductiveas~2 float   %9.0g                 
+Lproductiveas~3 float   %9.0g                 
+Lassetsconsum~2 float   %9.0g                 
+Lassetsconsum~3 float   %9.0g                 
+Lselfcostdwel~2 float   %9.0g                 
+Lselfcostdwel~3 float   %9.0g                 
+Lhousing_qual~2 float   %9.0g                 
+Lhousing_qual~3 float   %9.0g                 
+Lconsumpti_x_~i float   %9.0g                 
+Lconsumpti_x_~s float   %9.0g                 
+Lconsumpti_x_~g float   %9.0g                 
+Lconsumpti_x_~t float   %9.0g                 
+Lconsumpti_x~kn float   %9.0g                 
+Lconsumpti_x_~o float   %9.0g                 
+Lconsumpti_x_~v float   %9.0g                 
+Lconsumpti_x~on float   %9.0g                 
+Lconsumpti_x_~d float   %9.0g                 
+Lconsumpti_x_~q float   %9.0g                 
+Ldietarydi_x_~s float   %9.0g                 
+Ldietarydi_x_~g float   %9.0g                 
+Ldietarydi_x_~t float   %9.0g                 
+Ldietarydi_x~kn float   %9.0g                 
+Ldietarydi_x_~o float   %9.0g                 
+Ldietarydi_x_~v float   %9.0g                 
+Ldietarydi_x~on float   %9.0g                 
+Ldietarydi_x_~d float   %9.0g                 
+Ldietarydi_x_~q float   %9.0g                 
+Lwealth_as_x_~g float   %9.0g                 
+Lwealth_as_x_~t float   %9.0g                 
+Lwealth_as_x~kn float   %9.0g                 
+Lwealth_as_x_~o float   %9.0g                 
+Lwealth_as_x_~v float   %9.0g                 
+Lwealth_as_x~on float   %9.0g                 
+Lwealth_as_x_~d float   %9.0g                 
+Lwealth_as_x_~q float   %9.0g                 
+Lborrowing_x_~t float   %9.0g                 
+Lborrowing_x~kn float   %9.0g                 
+Lborrowing_x_~o float   %9.0g                 
+Lborrowing_x_~v float   %9.0g                 
+Lborrowing_x~on float   %9.0g                 
+Lborrowing_x_~d float   %9.0g                 
+Lborrowing_x_~q float   %9.0g                 
+Lsavingsst_x~kn float   %9.0g                 
+Lsavingsst_x_~o float   %9.0g                 
+Lsavingsst_x_~v float   %9.0g                 
+Lsavingsst_x~on float   %9.0g                 
+Lsavingsst_x_~d float   %9.0g                 
+Lsavingsst_x_~q float   %9.0g                 
+Lhealth_kn_x_~o float   %9.0g                 
+Lhealth_kn_x_~v float   %9.0g                 
+Lhealth_kn_x_~n float   %9.0g                 
+Lhealth_kn_x_~d float   %9.0g                 
+Lhealth_kn_x_~q float   %9.0g                 
+Lsanitatio_x_~v float   %9.0g                 
+Lsanitatio_x_~n float   %9.0g                 
+Lsanitatio_x_~d float   %9.0g                 
+Lsanitatio_x_~q float   %9.0g                 
+Lproductiv_x_~n float   %9.0g                 
+Lproductiv_x_~d float   %9.0g                 
+Lproductiv_x_~q float   %9.0g                 
+Lassetscon_x_~d float   %9.0g                 
+Lassetscon_x_~q float   %9.0g                 
+Lselfcostd_x_~q float   %9.0g                 
+_Iblock_2       byte    %8.0g                 block==2
+_Iblock_3       byte    %8.0g                 block==3
+_Iblock_4       byte    %8.0g                 block==4
+_Iblock_5       byte    %8.0g                 block==5
+_Iblock_6       byte    %8.0g                 block==6
+_Iblock_7       byte    %8.0g                 block==7
+_Iblock_8       byte    %8.0g                 block==8
+_Iblock_9       byte    %8.0g                 block==9
+_Iblock_10      byte    %8.0g                 block==10
+_Iblock_11      byte    %8.0g                 block==11
+_Iblock_12      byte    %8.0g                 block==12
+_Iblock_13      byte    %8.0g                 block==13
+_Iblock_14      byte    %8.0g                 block==14
+_Iblock_15      byte    %8.0g                 block==15
+_Iblock_16      byte    %8.0g                 block==16
+_Iblock_17      byte    %8.0g                 block==17
+_Iblock_18      byte    %8.0g                 block==18
+_Iblock_19      byte    %8.0g                 block==19
+_Iblock_20      byte    %8.0g                 block==20
+_Iblock_21      byte    %8.0g                 block==21
+_Iblock_22      byte    %8.0g                 block==22
+                                            * indicated variables have notes
+-------------------------------------------------------------------------------------------
+Sorted by: 
+
+. 
+. log close
+      name:  <unnamed>
+       log:  C:\Users\joeam\Documents\Bayes\variable_labels1.log
+  log type:  text
+ closed on:   8 Mar 2021, 15:12:17
+-------------------------------------------------------------------------------------------

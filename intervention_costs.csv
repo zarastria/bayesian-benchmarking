@@ -1,0 +1,6 @@
+gd_treat,treatment,cost_per_beneficiary,overhead_costs_fraction,value_received,spending_not_averted_fraction ,cost_per_household,cost_per_village_household
+,Gikuriro,141.84,0.514,72.91,0.4,134.13,72.94
+lower,GD,66.02,0.374,41.32,0,63.74,12.2
+mid,GD,111.09,0.247,83.63,0,110.73,20.83
+upper,GD,145.43,0.196,116.91,0,135.72,26.69
+huge,GD,566.55,0.061,532,0,555.15,99.56

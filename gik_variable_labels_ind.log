@@ -1,0 +1,528 @@
+-------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\joeam\Documents\Bayes\variable_labels.log
+  log type:  text
+ opened on:   8 Mar 2021, 15:09:20
+
+. 
+end of do-file
+
+. do "C:\Users\joeam\AppData\Local\Temp\STD00000000.tmp"
+
+. des
+
+Contains data from C:\Users\joeam\Downloads\deidentified_ind_panel_clean.dta
+  obs:        28,202                          
+ vars:           435                          23 Jan 2021 11:59
+ size:    50,255,964                          
+-------------------------------------------------------------------------------------------
+              storage   display    value
+variable name   type    format     label      variable label
+-------------------------------------------------------------------------------------------
+roster_id       str10   %10s                  
+round           float   %9.0g                 
+vid             double  %10.0g              * (mean) vid
+hhid            str14   %14s                * Household ID
+newmember       float   %9.0g                 Household member added since baseline
+oldmemberyesno  str1    %9s                   
+female          float   %9.0g               * 
+ageyears        float   %9.0g               * 
+agemonths       float   %9.0g               * 
+anthro_id       double  %10.0g                
+height_a        float   %8.0g               * 
+height_b        float   %8.0g               * 
+weight_a        float   %8.0g               * 
+weight_b        float   %8.0g               * 
+agemonths_ant~o float   %9.0g                 
+height          double  %9.0g                 
+weight          double  %9.0g                 
+hemoglobin_raw  float   %9.0g                 
+anemia_dummy    float   %9.0g                 Anemia
+muac            float   %9.0g                 
+pregnant_now    float   %9.0g                 
+pregnancy_cha~e float   %9.0g                 Pregnancy
+pregnancy_liv~h float   %9.0g                 Live birth
+mortality       float   %9.0g                 Child mortality
+fever           float   %9.0g               * 
+diarrhea        float   %9.0g                 
+fever_diarrhea  float   %9.0g               * 
+cough_blood     float   %9.0g               * 
+diarrhea_2weeks float   %9.0g                 
+fever_diarrhe~s float   %9.0g                 
+facility_birth  float   %9.0g               * Birth in facility
+anthro_vacc_y~r float   %9.0g               * Any vaccinations in past year
+anthro_vacc_c~e float   %9.0g               * Completed vaccination schedule
+agedays         long    %8.0g               * How many DAYS old is ?
+maritalstatus   int     %8.0g               * What is 's marital status?
+m1q6motherinhh  byte    %8.0g               * Does 's natural mother live in this
+                                                household?
+m1q8fatherinhh  byte    %8.0g               * Does 's natural father live in this
+                                                household?
+m1q10inschool   int     %8.0g               * Is currently enrolled in school?
+m1q11grade      byte    %8.0g               * What grade is currently enrolled in?
+m1_health_1___  int     %8.0g               * In the past 3 months, did experience fever
+                                                (without other ma
+dateofbirth     double  %td                 * Date of Birth
+anthro_ageles~o float   %9.0g                 
+anthro_agedays  float   %9.0g                 
+anthro_agemon~s float   %9.0g                 
+anthro_gender   float   %9.0g      female     
+count_obs       float   %9.0g                 Number of rounds in which roster_id observed
+R2              float   %9.0g                 Dummy for Round 2
+R1              float   %9.0g                 Dummy for Round 1
+eligible        float   %12.0g     iseligible
+                                              (max) hheligible
+ubudehe         float   %10.0g                (mean) ubudehe
+nEligible       float   %9.0g                 Number of Eligibles in Village
+nIneligible     float   %9.0g                 Number of Ineligibles in Village
+samplingproba~y float   %9.0g                 
+samp_wgt        float   %9.0g                 Sampling weight
+district        long    %8.0g      districts
+                                              
+pov_index       float   %9.0g                 
+block           float   %9.0g                 Blocks within which the randomization was
+                                                conducted
+treat           str7    %9s                   
+gd_treat        str5    %9s                   
+treatment       long    %8.0g      treatments
+                                              
+treatment_mode  long    %12.0g                
+gd_treat_mode   str5    %9s                   
+treat_GD        float   %9.0g                 GiveDirectly treatment village
+treat_GK        float   %9.0g                 Gikuriro treatment village
+treat_any       float   %9.0g                 Village gets either treatment
+treat_control   float   %9.0g                 Control village
+treat_GD_huge   float   %9.0g                 Huge GD treatment dummy
+treat_GD_main   float   %9.0g                 Low-mid-upper GD treatment dummy
+treated_GD      float   %9.0g                 Panel dummy for _GD treatment, only on in R2
+treated_GK      float   %9.0g                 Panel dummy for _GK treatment, only on in R2
+segovia_id      str20   %20s                  Segovia ID
+transferamount  double  %10.0g                Actual HH treatment amount from GD data
+registrationm.. str7    %9s                   registration##month1_preferences_choice
+r~2_preferenc~c str7    %9s                   registration##month2_preferences_choice
+r~3_preferenc~c str7    %9s                   registration##month3_preferences_choice
+r~4_preferenc~c str7    %9s                   registration##month4_preferences_choice
+r~5_preferenc~c str7    %9s                   registration##month5_preferences_choice
+r~6_preferenc~c str7    %9s                   registration##month6_preferences_choice
+r~7_preferenc~c str7    %9s                   registration##month7_preferences_choice
+r~8_preferenc~c str7    %9s                   registration##month8_preferences_choice
+r~9_preferenc~c str7    %9s                   registration##month9_preferences_choice
+r~0_preferenc~_ str7    %9s                   registration##month10_preferences_choice
+r~1_preferenc~_ str7    %9s                   registration##month11_preferences_choice
+r~2_preferenc~_ str7    %9s                   registration##month12_preferences_choice
+treatmentbag_~l str7    %9s                   registration##treatment_bag
+registrationd~s byte    %8.0g                 registration##dice_20_results
+GD_treatment_~d str7    %9s                   Actual treatment received in GD (lump sum or
+                                                flow, choice resolved to one or oth
+registrationr~t str7    %9s                   registration##results_payment_month
+LS_choice_ever  float   %9.0g                 Chose LS in Any Month
+LS_choice_alw~s float   %9.0g                 Chose LS in Every Month
+LS_choice_mean  float   %9.0g                 Fraction of months in which chose LS
+LS_choice       float   %9.0g                 Chose LS in the first month
+received_GD     float   %9.0g                 Dummy in GD treatment for whether appear in
+                                                GD data as treated
+elig_nonc       float   %9.0g                 
+treatmentbag    str8    %9s                   Individual treatment status from GD data
+treat_GD_lump~m float   %9.0g                 Lump Sum treatment within GD arm
+treat_GD_choice float   %9.0g                 Choice treatment within GD arm
+treat_GD_flow   float   %9.0g                 Flow treatment within GD arm
+durablesexpen~e float   %9.0g                 Durables expenditure (12-month recall)
+freqexpenditure float   %9.0g                 Frequent expnditures (4-week recall)
+foodexpenditure float   %9.0g                 Food expenditure (weekly recall)
+foodownconsum~n float   %9.0g                 Food consumption-value own production (weekly
+                                                recall)
+consumption     float   %9.0g                 Household monthly consumption
+dietarydivers~y float   %9.0g                 Household dietary diversity score
+assetslivestock float   %9.0g                 Total value livestock owned
+assetsproduct~n float   %9.0g                 Non-livestock productive asset value
+productiveass~s float   %9.0g                 Value of all productive assets (livestock and
+                                                non-livestock)
+assetsconsump~n float   %9.0g                 Consumption assets, total value, RWF
+owndwelling     float   %9.0g                 Own dwelling
+dwellingvalue   float   %9.0g                 Value of dwelling if owned
+savingsstock    float   %9.0g                 Value of savings stock
+borrowingstock  float   %9.0g                 Value of borrowing stock
+correct_food    float   %9.0g                 
+incorrect_food  float   %9.0g                 
+know_food_index float   %9.0g                 Know signs someone not having enough food
+                                                (proportion correct answers)
+know_undernou~x float   %9.0g                 Know reasons people are undernourished
+                                                (proportion correct answers)
+know_food2_in~x float   %9.0g                 Know signs someone not having enough food
+                                                (proportion correct answers)
+know_growing_~x float   %9.0g                 Know how find out if the baby is growing well
+                                                or not(proportion correct answers)
+know_weight_i~x float   %9.0g                 Know meaning the baby is not gaining weight
+                                                (proportion correct answers)
+know_undernut~x float   %9.0g                 Know prevent undernutrition among infants
+                                                (proportion correct answers)
+know_sickness~x float   %9.0g                 Know avoid sickness from germs from human or
+                                                animal faeces(proportion correct an
+know_wash_index float   %9.0g                 Know when washing hands (proportion correct
+                                                answers)
+correct_diarr~a float   %9.0g                 
+incorrect_dia~a float   %9.0g                 
+know_diarrhea~x float   %9.0g                 Know actions to prevent diarrhea (proportion
+                                                correct answers)
+washloc         float   %9.0g                 HH has location to wash hands
+toilet          float   %9.0g                 HH doesn't share the toilet
+treatwater      float   %9.0g                 HH treats drinking water
+washhands       float   %9.0g                 Always wash hands before eating
+latrineuse      float   %9.0g                 Always use latrine vs open defecation
+selfcostdwell   float   %9.0g                 Self-reported cost of current dwelling
+wallmaterial    float   %9.0g                 Walls of concrete, wood, or iron sheets
+roofmaterial    float   %9.0g                 Roof iron, clay, concrete or plastic sheeting
+roomsnumb       float   %9.0g                 Number of rooms
+lack_self_con~l float   %9.0g                 Respondent reports lacking self control by
+                                                any metric - don't keep cash regret p
+lack_other_co~l float   %9.0g                 Respondent lacks other control by any metric
+                                                - spouse conflict personality and t
+hhfemale        float   %9.0g                 Female household head
+hhmarried       float   %9.0g                 HH head is married or in union
+hhmember        float   %9.0g                 Number of household members
+hh_agriculture  float   %9.0g                 HH does engage in agriculture at baseline
+hh_wage_worker  float   %9.0g                 HH has wage worker at baseline
+hh_microenter~e float   %9.0g                 HH does operate microenterprise at baseline
+hh_SILC         float   %9.0g                 HH does participate in SILC at baseline
+hhage           float   %9.0g                 Age of household head in years
+hh_head_schoo~g float   %9.0g                 Household head is in school
+hh_av_schooling float   %9.0g                 
+hh_av_age       float   %9.0g                 Average age of household members
+hh_dep_ratio    float   %9.0g                 HH dependency ratio (#old + #young)/(#hh
+                                                members)
+vill_size       float   %9.0g                 Number of households in village
+vill_eligible~o float   %9.0g                 Fraction of village defined eligible by IPA
+ubudehe_1       float   %9.0g                 HH in Ubudehe 1 cat (3 & 4 omitted)
+ubudehe_2       float   %9.0g                 HH in Ubudehe 2 cat (3 & 4 omitted)
+health_knowle~e float   %9.0g                 Health Knowledge Index
+sanitation_pr~s float   %9.0g                 Sanitation Practices Index
+housing_quality float   %9.0g                 Housing Quality Index
+wealth          float   %9.0g                 Net non-land household wealth
+consumption_a~h float   %9.0g                 
+wealth_asinh    float   %9.0g                 
+borrowingstoc~h float   %9.0g                 
+savingsstock_~h float   %9.0g                 
+freqexpenditu~h float   %9.0g                 
+foodexpenditu~h float   %9.0g                 
+durablesexpen~h float   %9.0g                 
+foodownconsum~h float   %9.0g                 
+productiveass~h float   %9.0g                 
+assetsconsump~h float   %9.0g                 
+dwellingvalue~h float   %9.0g                 
+selfcostdwell~h float   %9.0g                 
+hh_consumptio~h float   %9.0g                 
+hh_wealth_asinh float   %9.0g                 
+hh_productive~h float   %9.0g                 
+hh_assetscons~h float   %9.0g                 
+hh_housing_qu~y float   %9.0g                 
+i               float   %9.0g                 group(roster_id)
+agemonths_sq    float   %9.0g                 
+agemonths_cu    float   %9.0g                 
+agemonths_end~e float   %9.0g                 Age individual would be (have been) in months
+                                                at endline
+ageyears_endl~e float   %9.0g                 Age individual would be (have been) in years
+                                                at endline
+waz_raw         float   %9.0g                 
+haz_raw         float   %9.0g                 
+muacz_raw       float   %9.0g                 
+haz06           float   %9.0g                 Height-for-age
+waz06           float   %9.0g                 Weight-for-age
+muacz           float   %9.0g                 Mid-upper arm circumference
+hemoglobin_win  float   %9.0g                 hemoglobin, Winsorized fraction .01
+hemoglobin      float   %9.0g                 
+stunted         float   %9.0g                 Stunted
+underweight     float   %9.0g                 Underweight
+disease_burden  float   %9.0g                 Disease burden
+diarrhea_prev~e float   %9.0g                 Diarrheal prevalence
+haz06_R1        float   %9.0g                 Baseline value of haz06, present in both
+                                                rounds
+waz06_R1        float   %9.0g                 Baseline value of waz06, present in both
+                                                rounds
+muacz_R1        float   %9.0g                 Baseline value of muacz, present in both
+                                                rounds
+pregnancy_cha~1 float   %9.0g                 Baseline value of pregnancy_chance, present
+                                                in both rounds
+pregnant_base~e float   %9.0g                 
+nobs_all        float   %9.0g                 
+nobs_anthro     float   %9.0g                 
+samplegrp_panel float   %9.0g                 
+samplegrp_women float   %9.0g                 
+samplegrp_und~6 float   %9.0g                 
+samplegrp_und~3 float   %9.0g                 
+anthro_present  float   %9.0g                 
+anthro_shouldbe float   %9.0g                 
+anemia_present  float   %9.0g                 
+anemia_eligib~t float   %9.0g                 
+anemia_eligib~e float   %9.0g                 
+individual_pa~l float   %9.0g                 
+individual_ba~1 float   %9.0g                 
+individual_ba~e float   %9.0g                 
+individual_at~s float   %9.0g                 Individual present at baseline attrites from
+                                                endline
+anthro_baseli~1 float   %9.0g                 
+anthro_baseline float   %9.0g                 
+anthro_panel    float   %9.0g                 
+anthro_attrites float   %9.0g                 Individual with anthro at baseline does not
+                                                have anthro at endline
+int_GK_ubudeh~1 float   %9.0g                 Interaction between treat_GK and covariate
+                                                ubudehe_1
+int_GD_main_u~1 float   %9.0g                 Interaction between treat_GD_main and
+                                                covariate ubudehe_1
+int_GD_huge_u~1 float   %9.0g                 Interaction between treat_GD_huge and
+                                                covariate ubudehe_1
+int_GK_female   float   %9.0g                 Interaction between treat_GK and covariate
+                                                female
+int_GD_main_f~e float   %9.0g                 Interaction between treat_GD_main and
+                                                covariate female
+int_GD_huge_f~e float   %9.0g                 Interaction between treat_GD_huge and
+                                                covariate female
+int_GK_agemon~q float   %9.0g                 Interaction between treat_GK and covariate
+                                                agemonths_sq
+int_GD_main_a~q float   %9.0g                 Interaction between treat_GD_main and
+                                                covariate agemonths_sq
+int_GD_huge_a~q float   %9.0g                 Interaction between treat_GD_huge and
+                                                covariate agemonths_sq
+int_GK_agemon~u float   %9.0g                 Interaction between treat_GK and covariate
+                                                agemonths_cu
+int_GD_main_a~u float   %9.0g                 Interaction between treat_GD_main and
+                                                covariate agemonths_cu
+int_GD_huge_a~u float   %9.0g                 Interaction between treat_GD_huge and
+                                                covariate agemonths_cu
+int_GK_hh_wea~h float   %9.0g                 Interaction between treat_GK and covariate
+                                                hh_wealth_asinh
+int_GD_main_h~h float   %9.0g                 Interaction between treat_GD_main and
+                                                covariate hh_wealth_asinh
+int_GD_huge_h~h float   %9.0g                 Interaction between treat_GD_huge and
+                                                covariate hh_wealth_asinh
+anthro_ipw_win  float   %9.0g                 anthro_ipw, Winsorized fraction .01, high
+                                                only
+samp_wgt_anth~w float   %9.0g                 Sampling weight * IPW estimated from anthro
+                                                attrition propensity
+alphaL          float   %9.0g                 alpha
+betaL           double  %10.0g                beta
+deltaL          double  %10.0g                delta
+alphaN          float   %9.0g                 alpha
+betaN           float   %9.0g                 beta
+deltaN          double  %10.0g                delta
+alphaT          float   %9.0g                 alpha
+betaT           float   %9.0g                 beta
+deltaT          double  %10.0g                delta
+presbiasL       float   %9.0g                 
+discountL       float   %9.0g                 
+presbiasN       float   %9.0g                 
+discountN       float   %9.0g                 
+presbiasT       float   %9.0g                 
+discountT       float   %9.0g                 
+inconsistent_~n float   %9.0g                 
+impatient_bin   float   %9.0g                 
+monotonic       float   %9.0g                 
+_Iblock_2       byte    %8.0g                 block==2
+_Iblock_3       byte    %8.0g                 block==3
+_Iblock_4       byte    %8.0g                 block==4
+_Iblock_5       byte    %8.0g                 block==5
+_Iblock_6       byte    %8.0g                 block==6
+_Iblock_7       byte    %8.0g                 block==7
+_Iblock_8       byte    %8.0g                 block==8
+_Iblock_9       byte    %8.0g                 block==9
+_Iblock_10      byte    %8.0g                 block==10
+_Iblock_11      byte    %8.0g                 block==11
+_Iblock_12      byte    %8.0g                 block==12
+_Iblock_13      byte    %8.0g                 block==13
+_Iblock_14      byte    %8.0g                 block==14
+_Iblock_15      byte    %8.0g                 block==15
+_Iblock_16      byte    %8.0g                 block==16
+_Iblock_17      byte    %8.0g                 block==17
+_Iblock_18      byte    %8.0g                 block==18
+_Iblock_19      byte    %8.0g                 block==19
+_Iblock_20      byte    %8.0g                 block==20
+_Iblock_21      byte    %8.0g                 block==21
+_Iblock_22      byte    %8.0g                 block==22
+Lconsumption_~h float   %9.0g                 L.
+Ldietarydiver~y float   %9.0g                 L.Household dietary diversity score
+Lwealth_asinh   float   %9.0g                 L.
+Lborrowingsto~h float   %9.0g                 L.
+Lsavingsstock~h float   %9.0g                 L.
+Lhealth_knowl~e float   %9.0g                 L.Health Knowledge Index
+Lsanitation_p~s float   %9.0g                 L.Sanitation Practices Index
+Lproductiveas~h float   %9.0g                 L.
+Lassetsconsum~h float   %9.0g                 L.
+Lselfcostdwel~h float   %9.0g                 L.
+Lhousing_qual~y float   %9.0g                 L.Housing Quality Index
+Lfreqexpendit~h float   %9.0g                 L.
+Lfoodexpendit~h float   %9.0g                 L.
+Ldurablesexpe~h float   %9.0g                 L.
+Lfoodownconsu~h float   %9.0g                 L.
+Ldwellingvalu~h float   %9.0g                 L.
+Lowndwelling    float   %9.0g                 L.Own dwelling
+Lhhmember       float   %9.0g                 L.Number of household members
+Lhhfemale       float   %9.0g                 L.Female household head
+Lhhmarried      float   %9.0g                 L.HH head is married or in union
+Lhh_agriculture float   %9.0g                 L.HH does engage in agriculture at baseline
+Lhh_wage_worker float   %9.0g                 L.HH has wage worker at baseline
+Lhh_microente~e float   %9.0g                 L.HH does operate microenterprise at baseline
+Lhh_SILC        float   %9.0g                 L.HH does participate in SILC at baseline
+Lvill_size      float   %9.0g                 L.Number of households in village
+Lvill_eligibl~o float   %9.0g                 L.Fraction of village defined eligible by IPA
+Lhhage          float   %9.0g                 L.Age of household head in years
+Lhh_av_age      float   %9.0g                 L.Average age of household members
+Lhh_av_school~g float   %9.0g                 L.
+Lhh_head_scho~g float   %9.0g                 L.Household head is in school
+Lhh_dep_ratio   float   %9.0g                 L.HH dependency ratio (#old + #young)/(#hh
+                                                members)
+Lubudehe        float   %9.0g                 L.(mean) ubudehe
+Lhh_consumpti~h float   %9.0g                 L.
+Lhh_wealth_as~h float   %9.0g                 L.
+Lhh_productiv~h float   %9.0g                 L.
+Lhh_assetscon~h float   %9.0g                 L.
+Lhh_housing_q~y float   %9.0g                 L.
+Lubudehe_1      float   %9.0g                 L.HH in Ubudehe 1 cat (3 & 4 omitted)
+Lubudehe_2      float   %9.0g                 L.HH in Ubudehe 2 cat (3 & 4 omitted)
+Lconsumption    float   %9.0g                 L.Household monthly consumption
+Lwealth         float   %9.0g                 L.Net non-land household wealth
+Lwashloc        float   %9.0g                 L.HH has location to wash hands
+Lwashhands      float   %9.0g                 L.Always wash hands before eating
+Ltreatwater     float   %9.0g                 L.HH treats drinking water
+Ltoilet         float   %9.0g                 L.HH doesn't share the toilet
+Llatrineuse     float   %9.0g                 L.Always use latrine vs open defecation
+Lselfcostdwell  float   %9.0g                 L.Self-reported cost of current dwelling
+Lwallmaterial   float   %9.0g                 L.Walls of concrete, wood, or iron sheets
+Lroofmaterial   float   %9.0g                 L.Roof iron, clay, concrete or plastic
+                                                sheeting
+Lroomsnumb      float   %9.0g                 L.Number of rooms
+Lfreqexpendit~e float   %9.0g                 L.Frequent expnditures (4-week recall)
+Lfoodexpendit~e float   %9.0g                 L.Food expenditure (weekly recall)
+Ldurablesexpe~e float   %9.0g                 L.Durables expenditure (12-month recall)
+Lfoodownconsu~n float   %9.0g                 L.Food consumption-value own production
+                                                (weekly recall)
+Lproductiveas~s float   %9.0g                 L.Value of all productive assets (livestock
+                                                and non-livestock)
+Lassetslivest~k float   %9.0g                 L.Total value livestock owned
+Lassetsconsum~n float   %9.0g                 L.Consumption assets, total value, RWF
+Lassetsproduc~n float   %9.0g                 L.Non-livestock productive asset value
+Ldwellingvalue  float   %9.0g                 L.Value of dwelling if owned
+Lsavingsstock   float   %9.0g                 L.Value of savings stock
+Lborrowingstock float   %9.0g                 L.Value of borrowing stock
+Lknow_food_in~x float   %9.0g                 L.Know signs someone not having enough food
+                                                (proportion correct answers)
+Lknow_diarrhe~x float   %9.0g                 L.Know actions to prevent diarrhea
+                                                (proportion correct answers)
+Lcorrect_food   float   %9.0g                 L.
+Lincorrect_food float   %9.0g                 L.
+Lcorrect_diar~a float   %9.0g                 L.
+Lincorrect_di~a float   %9.0g                 L.
+Lknow_underno~x float   %9.0g                 L.Know reasons people are undernourished
+                                                (proportion correct answers)
+Lknow_food2_i~x float   %9.0g                 L.Know signs someone not having enough food
+                                                (proportion correct answers)
+Lknow_growing~x float   %9.0g                 L.Know how find out if the baby is growing
+                                                well or not(proportion correct answer
+Lknow_weight_~x float   %9.0g                 L.Know meaning the baby is not gaining weight
+                                                (proportion correct answers)
+Lknow_undernu~x float   %9.0g                 L.Know prevent undernutrition among infants
+                                                (proportion correct answers)
+Lknow_sicknes~x float   %9.0g                 L.Know avoid sickness from germs from human
+                                                or animal faeces(proportion correct
+Lknow_wash_in~x float   %9.0g                 L.Know when washing hands (proportion correct
+                                                answers)
+Ldisease_burden float   %9.0g                 L.Any fever, diarrhea, or coughing blood at
+                                                individual/round level
+Lfemale         float   %9.0g                 L.
+Lagemonths      float   %9.0g                 L.
+Lagemonths_sq   float   %9.0g                 L.
+Lagemonths_cu   float   %9.0g                 L.
+Lhaz06          float   %9.0g                 L.
+Lwaz06          float   %9.0g                 L.
+Lmuacz          float   %9.0g                 L.
+Lconsumption_~2 float   %9.0g                 
+Lconsumption_~3 float   %9.0g                 
+Ldietarydiver~2 float   %9.0g                 
+Ldietarydiver~3 float   %9.0g                 
+Lwealth_asinh2  float   %9.0g                 
+Lwealth_asinh3  float   %9.0g                 
+Lborrowingsto~2 float   %9.0g                 
+Lborrowingsto~3 float   %9.0g                 
+Lsavingsstock~2 float   %9.0g                 
+Lsavingsstock~3 float   %9.0g                 
+Lhealth_knowl~2 float   %9.0g                 
+Lhealth_knowl~3 float   %9.0g                 
+Lsanitation_p~2 float   %9.0g                 
+Lsanitation_p~3 float   %9.0g                 
+Lproductiveas~2 float   %9.0g                 
+Lproductiveas~3 float   %9.0g                 
+Lassetsconsum~2 float   %9.0g                 
+Lassetsconsum~3 float   %9.0g                 
+Lselfcostdwel~2 float   %9.0g                 
+Lselfcostdwel~3 float   %9.0g                 
+Lhousing_qual~2 float   %9.0g                 
+Lhousing_qual~3 float   %9.0g                 
+Lhaz062         float   %9.0g                 
+Lhaz063         float   %9.0g                 
+Lwaz062         float   %9.0g                 
+Lwaz063         float   %9.0g                 
+Lmuacz2         float   %9.0g                 
+Lmuacz3         float   %9.0g                 
+Lconsumpti_x_~i float   %9.0g                 
+Lconsumpti_x_~s float   %9.0g                 
+Lconsumpti_x_~g float   %9.0g                 
+Lconsumpti_x_~t float   %9.0g                 
+Lconsumpti_x~kn float   %9.0g                 
+Lconsumpti_x_~o float   %9.0g                 
+Lconsumpti_x_~v float   %9.0g                 
+Lconsumpti_x~on float   %9.0g                 
+Lconsumpti_x_~d float   %9.0g                 
+Lconsumpti_x_~q float   %9.0g                 
+Ldietarydi_x_~s float   %9.0g                 
+Ldietarydi_x_~g float   %9.0g                 
+Ldietarydi_x_~t float   %9.0g                 
+Ldietarydi_x~kn float   %9.0g                 
+Ldietarydi_x_~o float   %9.0g                 
+Ldietarydi_x_~v float   %9.0g                 
+Ldietarydi_x~on float   %9.0g                 
+Ldietarydi_x_~d float   %9.0g                 
+Ldietarydi_x_~q float   %9.0g                 
+Lwealth_as_x_~g float   %9.0g                 
+Lwealth_as_x_~t float   %9.0g                 
+Lwealth_as_x~kn float   %9.0g                 
+Lwealth_as_x_~o float   %9.0g                 
+Lwealth_as_x_~v float   %9.0g                 
+Lwealth_as_x~on float   %9.0g                 
+Lwealth_as_x_~d float   %9.0g                 
+Lwealth_as_x_~q float   %9.0g                 
+Lborrowing_x_~t float   %9.0g                 
+Lborrowing_x~kn float   %9.0g                 
+Lborrowing_x_~o float   %9.0g                 
+Lborrowing_x_~v float   %9.0g                 
+Lborrowing_x~on float   %9.0g                 
+Lborrowing_x_~d float   %9.0g                 
+Lborrowing_x_~q float   %9.0g                 
+Lsavingsst_x~kn float   %9.0g                 
+Lsavingsst_x_~o float   %9.0g                 
+Lsavingsst_x_~v float   %9.0g                 
+Lsavingsst_x~on float   %9.0g                 
+Lsavingsst_x_~d float   %9.0g                 
+Lsavingsst_x_~q float   %9.0g                 
+Lhealth_kn_x_~o float   %9.0g                 
+Lhealth_kn_x_~v float   %9.0g                 
+Lhealth_kn_x_~n float   %9.0g                 
+Lhealth_kn_x_~d float   %9.0g                 
+Lhealth_kn_x_~q float   %9.0g                 
+Lsanitatio_x_~v float   %9.0g                 
+Lsanitatio_x_~n float   %9.0g                 
+Lsanitatio_x_~d float   %9.0g                 
+Lsanitatio_x_~q float   %9.0g                 
+Lproductiv_x_~n float   %9.0g                 
+Lproductiv_x_~d float   %9.0g                 
+Lproductiv_x_~q float   %9.0g                 
+Lassetscon_x_~d float   %9.0g                 
+Lassetscon_x_~q float   %9.0g                 
+Lselfcostd_x_~q float   %9.0g                 
+                                            * indicated variables have notes
+-------------------------------------------------------------------------------------------
+Sorted by: roster_id  round
+
+. log close
+      name:  <unnamed>
+       log:  C:\Users\joeam\Documents\Bayes\variable_labels.log
+  log type:  text
+ closed on:   8 Mar 2021, 15:09:52
+-------------------------------------------------------------------------------------------

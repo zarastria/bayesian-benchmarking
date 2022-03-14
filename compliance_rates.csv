@@ -1,0 +1,6 @@
+gd_treat,treatment,compliance_rate,compliance_rate_population
+,Gikuriro,0.909,0.19
+lower,GD,0.965,0.185
+mid,GD,0.997,0.188
+upper,GD,0.933,0.184
+huge,GD,0.98,0.176
