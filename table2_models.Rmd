@@ -26,6 +26,7 @@ Load the relavent packages
 ```{r, include=FALSE, echo=FALSE}
 library(tidyverse)
 library(parallel)
+library(cmdstanr)
 library(brms)
 #library(magrittr)
 library(knitr)
@@ -106,7 +107,7 @@ These models build out table 2 which presents the results for the primary and se
 
 ### Per Capita Monthly Consumption - Primary Outcome
 
-Load the Monlthy per capita consumption model variables
+Load the Monthly per capita consumption model variables
 
 ```{r, include=FALSE}
 # run linear model again using the bayesian "brms" package
@@ -135,7 +136,9 @@ per_cap_consumption_Bayesmodel <-
      iter = 2000,
      thin = 2,
      #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
-     cores = getOption("mc.cores", 1), #default set to 1 core
+     backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
 ```
 
