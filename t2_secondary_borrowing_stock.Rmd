@@ -1,0 +1,125 @@
+---
+title: "Table 2 - Borrowing Stock"
+output: word_document
+date: '2022-03-16'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE, echo=FALSE}
+library(tidyverse)
+library(parallel)
+library(cmdstanr)
+library(brms)
+library(rstan)
+library(posterior)
+#library(magrittr)
+library(knitr)
+library(broom)
+library(broom.mixed)
+library(tidybayes)
+library(bayesplot)
+library(bayestestR)
+library(kableExtra)
+library(xtable)
+library(sjPlot)
+#library(texreg)
+#library(kableExtra)
+library(tidymodels)
+library(estimatr)
+library(Hmisc)
+library(vip)
+library(car)
+library(sandwich)
+```
+
+Load the **borrowing stock** model variables
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+borrowing_stock_data <- read_csv("gik_hh_main.csv") %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         borrowingstock_asinh, # Outcome variable
+         borrowingstock_asinh_R1, # Baseline value of borrowingstock_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
+```
+
+
+**borrowing stock**: This is the basic bechmarking model utilizing `brm()` default, uninformed priors
+
+```{r}
+borrowing_stock_bayesmodel <-
+  brm(formula = borrowingstock_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        borrowingstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        (1 | block) + (1 | vid),
+     data = borrowing_stock_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\borrowing_stock_bayes")
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_borrowing_stock_bayesmodel <- tidy(borrowing_stock_bayesmodel)
+write_csv(tidy_borrowing_stock_bayesmodel, "uninformed_prior_outcomes\\borrowing_stock_bayes.csv")
+```
+
+Model Summery
+```{r}
+summary(borrowing_stock_bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(borrowing_stock_bayesmodel)
+check_prior(borrowing_stock_bayesmodel)
+```
+
+Diagnostics
+```{r}
+# trace diagnostic plot
+mcmc_trace(borrowing_stock_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_borrowingstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\borrowing_stock_trace.png", plot = last_plot(), width = 12, height = 5)
+
+#density diagnostic plots
+mcmc_dens(borrowing_stock_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_borrowingstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\borrowing_stock_dens.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_dens_overlay(borrowing_stock_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_borrowingstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\borrowing_stock_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(borrowing_stock_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_borrowingstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\borrowing_stock_acf.png", plot = last_plot(), width = 12, height = 5)
+```
+
+posterior predictive checks
+```{r}
+pp_check(borrowing_stock_bayesmodel, nsamples = 100)
+pp_check(borrowing_stock_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+```
+
+

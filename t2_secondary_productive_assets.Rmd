@@ -1,0 +1,130 @@
+---
+title: "Table 2 - Productive Assets"
+output: word_document
+date: '2022-03-16'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE, echo=FALSE}
+library(tidyverse)
+library(parallel)
+library(cmdstanr)
+library(brms)
+library(rstan)
+library(posterior)
+#library(magrittr)
+library(knitr)
+library(broom)
+library(broom.mixed)
+library(tidybayes)
+library(bayesplot)
+library(bayestestR)
+library(kableExtra)
+library(xtable)
+library(sjPlot)
+#library(texreg)
+library(tidymodels)
+library(estimatr)
+library(Hmisc)
+library(vip)
+library(car)
+library(sandwich)
+```
+
+Load the **productive assets** model variables
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+productive_assets_data <- read_csv("gik_hh_main.csv") %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         productiveassets_asinh, # Outcome variable
+         productiveassets_asinh_R1, # Baseline value of productiveassets_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, # controls
+         Lconsumpti_x_Lassetscon) # Interactions
+# view(per_cap_consumption_data)
+```
+
+
+**productive assets**: This is the basic benchmarking model utilizing the default, uninformed priors
+
+```{r}
+productive_assets_bayesmodel <-
+  brm(formula = productiveassets_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        productiveassets_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        Lconsumpti_x_Lassetscon +
+        (1 | block) + (1 | vid),
+     data = productive_assets_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\productive_assets_bayes")
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_productive_assets_bayesmodel <- tidy(productive_assets_bayesmodel)
+#view(tidy_productive_assets_bayesmodel)
+write_csv(tidy_productive_assets_bayesmodel, "uninformed_prior_outcomes\\productive_assets_bayes.csv")
+```
+
+Model Summery
+```{r}
+summary(productive_assets_bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(productive_assets_bayesmodel)
+check_prior(productive_assets_bayesmodel)
+```
+
+Diagnostics
+```{r}
+# trace diagnostic plot
+mcmc_trace(productive_assets_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_productiveassets_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lconsumpti_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\productive_assets_trace.png", plot = last_plot(), width = 12, height = 5)
+
+#density diagnostic plots
+mcmc_dens(productive_assets_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_productiveassets_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lconsumpti_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\productive_assets_dens.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_dens_overlay(productive_assets_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_productiveassets_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lconsumpti_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\productive_assets_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(productive_assets_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_productiveassets_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lconsumpti_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\productive_assets_acf.png", plot = last_plot(), width = 12, height = 5)
+```
+
+posterior predictive checks
+```{r}
+pp_check(productive_assets_bayesmodel, ndraws = 100)
+pp_check(productive_assets_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
+```

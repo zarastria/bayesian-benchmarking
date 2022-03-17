@@ -1,0 +1,138 @@
+---
+title: "Table 2 - Dietary Diversity"
+output: word_document
+date: '2022-03-15'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, include=FALSE, echo=FALSE}
+library(tidyverse)
+library(parallel)
+library(cmdstanr)
+library(brms)
+library(rstan)
+library(posterior)
+#library(magrittr)
+library(knitr)
+library(broom)
+library(broom.mixed)
+library(tidybayes)
+library(bayesplot)
+library(bayestestR)
+library(kableExtra)
+library(xtable)
+library(sjPlot)
+#library(texreg)
+#library(kableExtra)
+library(tidymodels)
+library(estimatr)
+library(Hmisc)
+library(vip)
+library(car)
+library(sandwich)
+```
+
+Load the **Dietary Diversity** variables
+
+```{r, include=FALSE, echo=FALSE}
+dietary_diversity_data <- read_csv("gik_hh_main.csv") %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         dietarydiversity, # Outcome variable - Household dietary diversity score
+         dietarydiversity_R1, # Baseline value of dietarydiversity, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, Lsavingsstock_asinh3, # controls
+         Lconsumpti_x_Ldietarydi, Lconsumpti_x_Lproductiv, Ldietarydi_x_Lassetscon) # control interactions
+```
+
+**Dietary Diversity:** This is the basic bechmarking model utilizing the default, uninformed priors
+
+```{r}
+dietary_diversity_Bayesmodel <- 
+  brm(formula = dietarydiversity | weights(samp_wgt) ~ 
+        cost_deviation + treat_any + treat_GK + 
+        dietarydiversity_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lsavingsstock_asinh3 + 
+        Lconsumpti_x_Ldietarydi + Lconsumpti_x_Lproductiv + Ldietarydi_x_Lassetscon + 
+        (1 | vid) + (1 | block),
+     data = dietary_diversity_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\dietary_diversity_Bayes")
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_dietary_diversity_Bayesmodel <- tidy(dietary_diversity_Bayesmodel)
+#view(tidy_dietary_diversity_Bayesmodel)
+write_csv(tidy_dietary_diversity_Bayesmodel, "uninformed_prior_outcomes\\dietary_diversity_bayes.csv")
+```
+
+Model Summary
+```{r}
+summary(dietary_diversity_Bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(dietary_diversity_Bayesmodel)
+check_prior(dietary_diversity_Bayesmodel)
+```
+
+Diagnostics
+```{r}
+# trace diagnostic plot
+mcmc_trace(dietary_diversity_Bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_dietarydiversity_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lsavingsstock_asinh3",
+                    "b_Lconsumpti_x_Ldietarydi", "b_Lconsumpti_x_Lproductiv", 
+                    "b_Ldietarydi_x_Lassetscon", "sd_block__Intercept", 
+                    "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\dietary_div_trace.png", plot = last_plot(), width = 12, height = 5)
+
+#density diagnostic plot
+mcmc_dens(dietary_diversity_Bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_dietarydiversity_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lsavingsstock_asinh3",
+                    "b_Lconsumpti_x_Ldietarydi", "b_Lconsumpti_x_Lproductiv", 
+                    "b_Ldietarydi_x_Lassetscon", "sd_block__Intercept", 
+                    "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\dietary_div_dens.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_dens_overlay(dietary_diversity_Bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_dietarydiversity_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lsavingsstock_asinh3",
+                    "b_Lconsumpti_x_Ldietarydi", "b_Lconsumpti_x_Lproductiv", 
+                    "b_Ldietarydi_x_Lassetscon", "sd_block__Intercept", 
+                    "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\dietary_div_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(dietary_diversity_Bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_dietarydiversity_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lsavingsstock_asinh3",
+                    "b_Lconsumpti_x_Ldietarydi", "b_Lconsumpti_x_Lproductiv", 
+                    "b_Ldietarydi_x_Lassetscon", "sd_block__Intercept", 
+                    "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\dietary_div_acf.png", plot = last_plot(), width = 12, height = 5)
+```
+
+posterior predictive checks
+```{r}
+pp_check(dietary_diversity_Bayesmodel, nsamples = 100)
+pp_check(dietary_diversity_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+```

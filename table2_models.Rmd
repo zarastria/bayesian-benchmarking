@@ -21,13 +21,15 @@ $$ Y_{icb2} = \alpha_{b} + \delta^{T} T_{c} + \delta^{GK} T^{GK}_c + \beta X_{ic
 
 ### the needful
 
-Load the relavent packages
+Load the relevant packages
 
 ```{r, include=FALSE, echo=FALSE}
 library(tidyverse)
 library(parallel)
 library(cmdstanr)
 library(brms)
+library(rstan)
+library(posterior)
 #library(magrittr)
 library(knitr)
 library(broom)
@@ -35,10 +37,10 @@ library(broom.mixed)
 library(tidybayes)
 library(bayesplot)
 library(bayestestR)
+library(kableExtra)
 library(xtable)
 library(sjPlot)
 #library(texreg)
-#library(kableExtra)
 library(tidymodels)
 library(estimatr)
 library(Hmisc)
@@ -47,7 +49,7 @@ library(car)
 library(sandwich)
 ```
 
-Set global core settings, if applicable. Use global setting only if necessary, best to use as an inline setting to avoid overallocating system resources
+Set global core settings, if applicable. Use global setting only if necessary, best to use as an inline setting to avoid over allocating system resources
 ```{r, include=FALSE}
 # # parallel package is needed for eh detectCores() and mclapply() function
 # numCores <- detectCores()
@@ -83,7 +85,8 @@ gik_hh_main <- gik_hh_data %>%
   left_join(as_tibble(read_csv("intervention_costs.csv"))) %>%
   filter(eligible == "eligible", round == 2) %>%
   mutate(cost_deviation = (cost_per_beneficiary - 141.84)) %>% # create the cost-benefit differential per beneficary variable
-  mutate(cost_deviation = replace_na(cost_deviation, 0))
+  mutate(cost_deviation = replace_na(cost_deviation, 0)) %>%
+  write_csv("gik_hh_main.csv")
 
 # # The code below was used for validation purposes and is no longer applicable
 # check <- gik_hh_main %>%
@@ -105,13 +108,13 @@ gik_hh_main <- gik_hh_data %>%
 
 These models build out table 2 which presents the results for the primary and secondary outcomes utilizing uninformed priors utiling default brm values.
 
-### Per Capita Monthly Consumption - Primary Outcome
+### **Per Capita Monthly Consumption** - Primary Outcome
 
 Load the Monthly per capita consumption model variables
 
 ```{r, include=FALSE}
 # run linear model again using the bayesian "brms" package
-per_cap_consumption_data <- gik_hh_main %>%
+per_cap_consumption_data <- read_csv("gik_hh_main.csv") %>%
   select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
          treat_any, treat_GK, # treatment dummies
          consumption_asinh, # Outcome variable
@@ -134,12 +137,13 @@ per_cap_consumption_Bayesmodel <-
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
-     thin = 2,
-     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
-     backend = "cmdstanr",
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
-     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\per_cap_consumption_Bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
@@ -161,22 +165,38 @@ check_prior(per_cap_consumption_Bayesmodel)
 
 Diagnostics
 ```{r}
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "trace")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "dens")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "acf")
+# trace diagnostic plot
+mcmc_trace(per_cap_consumption_Bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "sd_block__Intercept", 
+                    "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\per_cap_consumption_trace.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "areas") # need to work on this one
 
-mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+#density diagnostic plot
+mcmc_dens(per_cap_consumption_Bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "sd_block__Intercept", 
+                    "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\per_cap_consumption_dens.png", plot = last_plot(), width = 12, height = 5)
 
-# # combo is a good one but need to select specific variables using the pars command
-# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
-# 
-# # additional plots for diagnostics
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
-# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+mcmc_dens_overlay(per_cap_consumption_Bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "sd_block__Intercept", 
+                    "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\per_cap_consumption_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(per_cap_consumption_Bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "sd_block__Intercept", 
+                    "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\per_cap_consumption_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
@@ -187,12 +207,12 @@ pp_check(per_cap_consumption_Bayesmodel, nsamples = 10, type = 'error_scatter_av
 
 
 
-### Dietary Diversity - Primary Outcome
+### **Dietary Diversity** - Primary Outcome
 
-Load the *Dietary Diversity* variables
+Load the **Dietary Diversity** variables
 
 ```{r, include=FALSE}
-dietary_diversity_data <- gik_hh_main %>%
+dietary_diversity_data <- read_csv("gik_hh_main.csv") %>%
   select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
          treat_any, treat_GK, # treatment dummies
          dietarydiversity, # Outcome variable - Household dietary diversity score
@@ -201,9 +221,9 @@ dietary_diversity_data <- gik_hh_main %>%
          Lconsumpti_x_Ldietarydi, Lconsumpti_x_Lproductiv, Ldietarydi_x_Lassetscon) # control interactions
 ```
 
-**Dietary Diversity:** This is the basic bechmarking model utilzing the default, uninformed priors
+**Dietary Diversity:** This is the basic bechmarking model utilizing the default, uninformed priors
 
-```{r, include=FALSE}
+```{r}
 dietary_diversity_Bayesmodel <- 
   brm(formula = dietarydiversity | weights(samp_wgt) ~ 
         cost_deviation + treat_any + treat_GK + 
@@ -216,14 +236,17 @@ dietary_diversity_Bayesmodel <-
      warmup = 1000,
      iter = 2000,
      thin = 1,
-     control = list(max_treedepth = 11),
-     cores = getOption("mc.cores", 1),
-     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\dietary_diversity_Bayes")
 ```
 
 ```{r}
 tidy_dietary_diversity_Bayesmodel <- tidy(dietary_diversity_Bayesmodel)
-view(tidy_dietary_diversity_Bayesmodel)
+#view(tidy_dietary_diversity_Bayesmodel)
 write_csv(tidy_dietary_diversity_Bayesmodel, "uninformed_prior_outcomes\\dietary_diversity_bayes.csv")
 ```
 
@@ -240,10 +263,45 @@ check_prior(dietary_diversity_Bayesmodel)
 
 Diagnostics
 ```{r}
-mcmc_plot(dietary_diversity_Bayesmodel, type = "trace")
-mcmc_plot(dietary_diversity_Bayesmodel, type = "dens")
-mcmc_plot(dietary_diversity_Bayesmodel, type = "acf")
-mcmc_plot(dietary_diversity_Bayesmodel, type = "areas") # need to work on this one
+# trace diagnostic plot
+mcmc_trace(dietary_diversity_Bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_dietarydiversity_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lsavingsstock_asinh3",
+                    "b_Lconsumpti_x_Ldietarydi", "b_Lconsumpti_x_Lproductiv", 
+                    "b_Ldietarydi_x_Lassetscon", "sd_block__Intercept", 
+                    "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\dietary_div_trace.png", plot = last_plot(), width = 12, height = 5)
+
+#density diagnostic plot
+mcmc_dens(dietary_diversity_Bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_dietarydiversity_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lsavingsstock_asinh3",
+                    "b_Lconsumpti_x_Ldietarydi", "b_Lconsumpti_x_Lproductiv", 
+                    "b_Ldietarydi_x_Lassetscon", "sd_block__Intercept", 
+                    "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\dietary_div_dens.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_dens_overlay(dietary_diversity_Bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_dietarydiversity_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lsavingsstock_asinh3",
+                    "b_Lconsumpti_x_Ldietarydi", "b_Lconsumpti_x_Lproductiv", 
+                    "b_Ldietarydi_x_Lassetscon", "sd_block__Intercept", 
+                    "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\dietary_div_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(dietary_diversity_Bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_dietarydiversity_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lsavingsstock_asinh3",
+                    "b_Lconsumpti_x_Ldietarydi", "b_Lconsumpti_x_Lproductiv", 
+                    "b_Ldietarydi_x_Lassetscon", "sd_block__Intercept", 
+                    "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\dietary_div_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
@@ -254,13 +312,13 @@ pp_check(dietary_diversity_Bayesmodel, nsamples = 10, type = 'error_scatter_avg'
 
 
 
-### Total Household Wealth - Primary Outcome
+### **Total Household Wealth** - Primary Outcome
 
 Load the **total household wealth** model variables
 
 ```{r, include=FALSE}
 # run linear model again using the bayesian "brms" package
-hh_wealth_data <- gik_hh_main %>%
+hh_wealth_data <- read_csv("gik_hh_main.csv") %>%
   select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
          treat_any, treat_GK, # treatment dummies
          wealth_asinh, # Outcome variable
@@ -270,9 +328,9 @@ hh_wealth_data <- gik_hh_main %>%
 ```
 
 
-**total household wealth**: This is the basic bechmarking model utilzing `brm()` default, uninformed priors
+**total household wealth**: This is the basic bechmarking model utilizing `brm()` default, uninformed priors
 
-```{r, include=FALSE, echo=FALSE}
+```{r}
 hh_wealth_Bayesmodel <-
   brm(formula = wealth_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
@@ -281,12 +339,15 @@ hh_wealth_Bayesmodel <-
      data = hh_wealth_data,
      family = gaussian("identity"),
      seed = 1272022,
-     warmup = 1000,
-     iter = 2000,
+     warmup = 4000,
+     iter = 6000,
      thin = 2,
-     #control = list(adapt_delta = .95, max_treedepth = 15), #this is overkill and computationally intensive
-     cores = getOption("mc.cores", 1), #default set to 1 core
-     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+     control = list(adapt_delta = .99, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\hh_wealth_Bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
@@ -306,23 +367,60 @@ prior_summary(hh_wealth_Bayesmodel)
 check_prior(hh_wealth_Bayesmodel)
 ```
 
+
+```{r, include=FALSE, echo=FALSE}
+## to be included in Table 3
+
+# df_1 <- posterior_summary(hh_wealth_Bayesmodel)
+# df_2 <- prior_summary(hh_wealth_Bayesmodel)
+# df_3 <- check_prior(hh_wealth_Bayesmodel)
+# 
+# view(df_1)
+# view(df_2)
+# view(df_3)
+# 
+# draws <- as_draws_array(hh_wealth_Bayesmodel)
+# view(draws)
+# summarise_draws(draws, default_summary_measures())
+# summarise_draws(draws, default_summary_measures())
+# 
+# order_draws <- order_draws(draws)
+```
+
+
 Diagnostics
 ```{r}
-mcmc_plot(hh_wealth_Bayesmodel, type = "trace")
-mcmc_plot(hh_wealth_Bayesmodel, type = "dens")
-mcmc_plot(hh_wealth_Bayesmodel, type = "acf")
-mcmc_plot(hh_wealth_Bayesmodel, type = "areas") # need to work on this one
+# trace diagnostic plot
+mcmc_trace(hh_wealth_Bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lowndwelling",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\hh_wealth_trace.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_plot(hh_wealth_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+#density diagnostic plot
+mcmc_dens(hh_wealth_Bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lowndwelling",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\hh_wealth_dens.png", plot = last_plot(), width = 12, height = 5)
 
-# # combo is a good one but need to select specific variables using the pars command
-# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
-# 
-# # additional plots for diagnostics
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
-# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+mcmc_dens_overlay(hh_wealth_Bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lowndwelling",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\hh_wealth_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(hh_wealth_Bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lowndwelling",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\hh_wealth_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
@@ -332,25 +430,24 @@ pp_check(hh_wealth_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha 
 ```
 
 
-### Borrowing Stock - Secondary Outcome
+### **Borrowing Stock** - Secondary Outcome
 
 Load the **borrowing stock** model variables
 
 ```{r, include=FALSE}
 # run linear model again using the bayesian "brms" package
-borrowing_stock_data <- gik_hh_main %>%
+borrowing_stock_data <- read_csv("gik_hh_main.csv") %>%
   select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
          treat_any, treat_GK, # treatment dummies
          borrowingstock_asinh, # Outcome variable
          borrowingstock_asinh_R1, # Baseline value of borrowingstock_asinh, present in both rounds
          Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
-# view(per_cap_consumption_data)
 ```
 
 
-**borrowing stock**: This is the basic bechmarking model utilzing `brm()` default uninformed priors
+**borrowing stock**: This is the basic bechmarking model utilizing `brm()` default, uninformed priors
 
-```{r, include=FALSE, echo=FALSE}
+```{r}
 borrowing_stock_bayesmodel <-
   brm(formula = borrowingstock_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
@@ -361,15 +458,17 @@ borrowing_stock_bayesmodel <-
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
-     thin = 2,
-     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
-     cores = getOption("mc.cores", 1), #default set to 1 core
-     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\borrowing_stock_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
 tidy_borrowing_stock_bayesmodel <- tidy(borrowing_stock_bayesmodel)
-#view(borrowing_stock_bayesmodel)
 write_csv(tidy_borrowing_stock_bayesmodel, "uninformed_prior_outcomes\\borrowing_stock_bayes.csv")
 ```
 
@@ -386,12 +485,32 @@ check_prior(borrowing_stock_bayesmodel)
 
 Diagnostics
 ```{r}
-mcmc_plot(borrowing_stock_bayesmodel, type = "trace")
-mcmc_plot(borrowing_stock_bayesmodel, type = "dens")
-mcmc_plot(borrowing_stock_bayesmodel, type = "acf")
-mcmc_plot(borrowing_stock_bayesmodel, type = "areas") # need to work on this one
+# trace diagnostic plot
+mcmc_trace(borrowing_stock_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_borrowingstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\borrowing_stock_trace.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_plot(borrowing_stock_bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+#density diagnostic plots
+mcmc_dens(borrowing_stock_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_borrowingstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\borrowing_stock_dens.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_dens_overlay(borrowing_stock_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_borrowingstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\borrowing_stock_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(borrowing_stock_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_borrowingstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\borrowing_stock_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
@@ -401,14 +520,13 @@ pp_check(borrowing_stock_bayesmodel, nsamples = 10, type = 'error_scatter_avg', 
 ```
 
 
-### Savings Stock - Secondary Outcome
-
+### **Savings Stock** - Secondary Outcome
 
 Load the **savings stock** model variables
 
 ```{r, include=FALSE}
 # run linear model again using the bayesian "brms" package
-savings_stock_data <- gik_hh_main %>%
+savings_stock_data <- read_csv("gik_hh_main.csv") %>%
   select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
          treat_any, treat_GK, # treatment dummies
          savingsstock_asinh, # Outcome variable
@@ -421,7 +539,7 @@ savings_stock_data <- gik_hh_main %>%
 
 **savings stock**: This is the basic bechmarking model utilzing `brm()` default uninformed priors
 
-```{r, include=FALSE, echo=FALSE}
+```{r}
 savings_stock_bayesmodel <-
   brm(formula = savingsstock_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
@@ -433,10 +551,13 @@ savings_stock_bayesmodel <-
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
-     thin = 2,
-     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
-     cores = getOption("mc.cores", 1), #default set to 1 core
-     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\savings_stock_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
@@ -458,12 +579,36 @@ check_prior(savings_stock_bayesmodel)
 
 Diagnostics
 ```{r}
-mcmc_plot(savings_stock_bayesmodel, type = "trace")
-mcmc_plot(savings_stock_bayesmodel, type = "dens")
-mcmc_plot(savings_stock_bayesmodel, type = "acf")
-mcmc_plot(savings_stock_bayesmodel, type = "areas") # need to work on this one
+# trace diagnostic plot
+mcmc_trace(savings_stock_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_savingsstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lconsumpti_x_Lproductiv", "b_Lconsumpti_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\savings_stock_trace.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_plot(savings_stock_bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+#density diagnostic plots
+mcmc_dens(savings_stock_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_savingsstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lconsumpti_x_Lproductiv", "b_Lconsumpti_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\savings_stock_dens.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_dens_overlay(savings_stock_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_savingsstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lconsumpti_x_Lproductiv", "b_Lconsumpti_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\savings_stock_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(savings_stock_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_savingsstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lconsumpti_x_Lproductiv", "b_Lconsumpti_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\savings_stock_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
@@ -473,26 +618,24 @@ pp_check(savings_stock_bayesmodel, nsamples = 10, type = 'error_scatter_avg', al
 ```
 
 
-### Health Knowledge - Secondary Outcome
-
+### **Health Knowledge** - Secondary Outcome
 
 Load the **health knowledge** model variables
 
 ```{r, include=FALSE}
 # run linear model again using the bayesian "brms" package
-health_knowledge_data <- gik_hh_main %>%
+health_knowledge_data <- read_csv("gik_hh_main.csv") %>%
   select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
          treat_any, treat_GK, # treatment dummies
          health_knowledge, # Outcome variable
          health_knowledge_R1, # Baseline value of health_knowledge, present in both rounds
          Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
-# view(per_cap_consumption_data)
 ```
 
 
-**health knowledge**: This is the basic bechmarking model utilzing `brm()` default uninformed priors
+**health knowledge**: This is the basic bechmarking model utilzing `brm()` default, uninformed priors
 
-```{r, include=FALSE, echo=FALSE}
+```{r}
 health_knowledge_bayesmodel <-
   brm(formula = health_knowledge | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
@@ -504,10 +647,13 @@ health_knowledge_bayesmodel <-
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
-     thin = 2,
-     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
-     cores = getOption("mc.cores", 1), #default set to 1 core
-     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\health_knowledge_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
@@ -529,413 +675,523 @@ check_prior(health_knowledge_bayesmodel)
 
 Diagnostics
 ```{r}
-mcmc_plot(health_knowledge_bayesmodel, type = "trace")
-mcmc_plot(health_knowledge_bayesmodel, type = "dens")
-mcmc_plot(health_knowledge_bayesmodel, type = "acf")
-mcmc_plot(health_knowledge_bayesmodel, type = "areas") # need to work on this one
+# trace diagnostic plot
+mcmc_trace(health_knowledge_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_health_knowledge_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\health_knowledge_trace.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_plot(health_knowledge_bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+#density diagnostic plots
+mcmc_dens(health_knowledge_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_health_knowledge_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\health_knowledge_dens.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_dens_overlay(health_knowledge_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_health_knowledge_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\health_knowledge_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(health_knowledge_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_health_knowledge_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\health_knowledge_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(health_knowledge_bayesmodel, nsamples = 100)
-pp_check(health_knowledge_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(health_knowledge_bayesmodel, ndraws = 100)
+pp_check(health_knowledge_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
-### Sanitation Practices - Secondary Outcome
-
+### **sanitation practices** - Secondary Outcome
 
 Load the **sanitation practices** model variables
 
 ```{r, include=FALSE}
 # run linear model again using the bayesian "brms" package
-per_cap_consumption_data <- gik_hh_main %>%
+sanitation_practices_data <- read_csv("gik_hh_main.csv") %>%
   select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
          treat_any, treat_GK, # treatment dummies
-         consumption_asinh, # Outcome variable
-         consumption_asinh_R1, # Baseline value of consumption_asinh, present in both rounds
-         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
-# view(per_cap_consumption_data)
+         sanitation_practices, # Outcome variable
+         sanitation_practices_R1, # Baseline value of sanitation_practices, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, # controls
+         Lproductiv_x_Lassetscon) # Interactions
 ```
 
 
-**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
+**sanitation practices**: This is the basic benchmarking model utilizing the default, uninformed priors
 
-```{r, include=FALSE, echo=FALSE}
-per_cap_consumption_Bayesmodel <-
-  brm(formula = consumption_asinh | weights(samp_wgt) ~
+```{r}
+sanitation_practices_bayesmodel <-
+  brm(formula = sanitation_practices | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
-        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        sanitation_practices_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        Lproductiv_x_Lassetscon +
         (1 | block) + (1 | vid),
-     data = per_cap_consumption_data,
+     data = sanitation_practices_data,
      family = gaussian("identity"),
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
-     thin = 2,
-     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
-     cores = getOption("mc.cores", 1), #default set to 1 core
-     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\sanitation_practices_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_per_cap_consumption_Bayesmodel <- tidy(per_cap_consumption_Bayesmodel)
-#view(tidy_per_cap_consumption_Bayesmodel)
-write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_bayes.csv")
+tidy_sanitation_practices_bayesmodel <- tidy(sanitation_practices_bayesmodel)
+#view(tidy_sanitation_practices_bayesmodel)
+write_csv(tidy_sanitation_practices_bayesmodel, "uninformed_prior_outcomes\\sanitation_practices_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(per_cap_consumption_Bayesmodel)
+summary(sanitation_practices_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(per_cap_consumption_Bayesmodel)
-check_prior(per_cap_consumption_Bayesmodel)
+prior_summary(sanitation_practices_bayesmodel)
+check_prior(sanitation_practices_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "trace")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "dens")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "acf")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "areas") # need to work on this one
+# trace diagnostic plot
+mcmc_trace(sanitation_practices_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_sanitation_practices_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lproductiv_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\sanitation_practices_trace.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+#density diagnostic plots
+mcmc_dens(sanitation_practices_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_sanitation_practices_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lproductiv_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\sanitation_practices_dens.png", plot = last_plot(), width = 12, height = 5)
 
-# # combo is a good one but need to select specific variables using the pars command
-# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
-# 
-# # additional plots for diagnostics
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
-# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+mcmc_dens_overlay(sanitation_practices_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_sanitation_practices_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lproductiv_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\sanitation_practices_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(sanitation_practices_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_sanitation_practices_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lproductiv_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\sanitation_practices_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(per_cap_consumption_Bayesmodel, nsamples = 100)
-pp_check(per_cap_consumption_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(sanitation_practices_bayesmodel, ndraws = 100)
+pp_check(sanitation_practices_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
-### Productive Assets - Secondary Outcome
+### **productive assets** - Secondary Outcome
 
 Load the **productive assets** model variables
 
-
-
 ```{r, include=FALSE}
 # run linear model again using the bayesian "brms" package
-per_cap_consumption_data <- gik_hh_main %>%
+productive_assets_data <- read_csv("gik_hh_main.csv") %>%
   select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
          treat_any, treat_GK, # treatment dummies
-         consumption_asinh, # Outcome variable
-         consumption_asinh_R1, # Baseline value of consumption_asinh, present in both rounds
-         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
+         productiveassets_asinh, # Outcome variable
+         productiveassets_asinh_R1, # Baseline value of productiveassets_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, # controls
+         Lconsumpti_x_Lassetscon) # Interactions
 # view(per_cap_consumption_data)
 ```
 
 
-**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
+**productive assets**: This is the basic benchmarking model utilizing the default, uninformed priors
 
-```{r, include=FALSE, echo=FALSE}
-per_cap_consumption_Bayesmodel <-
-  brm(formula = consumption_asinh | weights(samp_wgt) ~
+```{r}
+productive_assets_bayesmodel <-
+  brm(formula = productiveassets_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
-        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        productiveassets_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        Lconsumpti_x_Lassetscon +
         (1 | block) + (1 | vid),
-     data = per_cap_consumption_data,
+     data = productive_assets_data,
      family = gaussian("identity"),
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
-     thin = 2,
-     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
-     cores = getOption("mc.cores", 1), #default set to 1 core
-     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\productive_assets_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_per_cap_consumption_Bayesmodel <- tidy(per_cap_consumption_Bayesmodel)
-#view(tidy_per_cap_consumption_Bayesmodel)
-write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_bayes.csv")
+tidy_productive_assets_bayesmodel <- tidy(productive_assets_bayesmodel)
+#view(tidy_productive_assets_bayesmodel)
+write_csv(tidy_productive_assets_bayesmodel, "uninformed_prior_outcomes\\productive_assets_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(per_cap_consumption_Bayesmodel)
+summary(productive_assets_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(per_cap_consumption_Bayesmodel)
-check_prior(per_cap_consumption_Bayesmodel)
+prior_summary(productive_assets_bayesmodel)
+check_prior(productive_assets_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "trace")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "dens")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "acf")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "areas") # need to work on this one
+# trace diagnostic plot
+mcmc_trace(productive_assets_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_productiveassets_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lconsumpti_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\productive_assets_trace.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+#density diagnostic plots
+mcmc_dens(productive_assets_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_productiveassets_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lconsumpti_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\productive_assets_dens.png", plot = last_plot(), width = 12, height = 5)
 
-# # combo is a good one but need to select specific variables using the pars command
-# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
-# 
-# # additional plots for diagnostics
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
-# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+mcmc_dens_overlay(productive_assets_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_productiveassets_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lconsumpti_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\productive_assets_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(productive_assets_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_productiveassets_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "b_Lconsumpti_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\productive_assets_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(per_cap_consumption_Bayesmodel, nsamples = 100)
-pp_check(per_cap_consumption_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(productive_assets_bayesmodel, ndraws = 100)
+pp_check(productive_assets_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
-### Consumptions Assets - Secondary Outcome
+### **Consumption Assets** - Secondary Outcome
 
 Load the **consumption assets** model variables
 
-
-
 ```{r, include=FALSE}
 # run linear model again using the bayesian "brms" package
-per_cap_consumption_data <- gik_hh_main %>%
+consumption_assets_data <- read_csv("gik_hh_main.csv") %>%
   select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
          treat_any, treat_GK, # treatment dummies
-         consumption_asinh, # Outcome variable
-         consumption_asinh_R1, # Baseline value of consumption_asinh, present in both rounds
-         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
-# view(per_cap_consumption_data)
+         assetsconsumption_asinh, # Outcome variable
+         assetsconsumption_asinh_R1, # Baseline value of assetsconsumption_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, Lroomsnumb, Ldurablesexpenditure,  # controls
+         Ldietarydi_x_Lassetscon, Lproductiv_x_Lassetscon) # Interactions
 ```
 
+**consumption assets**: This is the basic benchmarking model utilizing the default, uninformed priors
 
-**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
-
-```{r, include=FALSE, echo=FALSE}
-per_cap_consumption_Bayesmodel <-
-  brm(formula = consumption_asinh | weights(samp_wgt) ~
+```{r}
+consumption_assets_bayesmodel <-
+  brm(formula = assetsconsumption_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
-        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        assetsconsumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure +
+        Ldietarydi_x_Lassetscon + Lproductiv_x_Lassetscon +
         (1 | block) + (1 | vid),
-     data = per_cap_consumption_data,
+     data = consumption_assets_data,
      family = gaussian("identity"),
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
-     thin = 2,
-     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
-     cores = getOption("mc.cores", 1), #default set to 1 core
-     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\consumption_assets_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_per_cap_consumption_Bayesmodel <- tidy(per_cap_consumption_Bayesmodel)
-#view(tidy_per_cap_consumption_Bayesmodel)
-write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_bayes.csv")
+tidy_consumption_assets_bayesmodel <- tidy(consumption_assets_bayesmodel)
+#view(tidy_consumption_assets_bayesmodel)
+write_csv(tidy_consumption_assets_bayesmodel, "uninformed_prior_outcomes\\consumption_assets_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(per_cap_consumption_Bayesmodel)
+summary(consumption_assets_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(per_cap_consumption_Bayesmodel)
-check_prior(per_cap_consumption_Bayesmodel)
+prior_summary(consumption_assets_bayesmodel)
+check_prior(consumption_assets_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "trace")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "dens")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "acf")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "areas") # need to work on this one
+# trace diagnostic plot
+mcmc_trace(consumption_assets_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_assetsconsumption_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
+                    "b_Lroomsnumb", "b_Ldurablesexpenditure",
+                    "b_Ldietarydi_x_Lassetscon", "b_Lproductiv_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\consumption_assets_trace.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+#density diagnostic plots
+mcmc_dens(consumption_assets_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_assetsconsumption_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
+                    "b_Lroomsnumb", "b_Ldurablesexpenditure",
+                    "b_Ldietarydi_x_Lassetscon", "b_Lproductiv_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\consumption_assets_dens.png", plot = last_plot(), width = 12, height = 5)
 
-# # combo is a good one but need to select specific variables using the pars command
-# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
-# 
-# # additional plots for diagnostics
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
-# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+mcmc_dens_overlay(consumption_assets_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_assetsconsumption_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
+                    "b_Lroomsnumb", "b_Ldurablesexpenditure",
+                    "b_Ldietarydi_x_Lassetscon", "b_Lproductiv_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\consumption_assets_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(consumption_assets_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_assetsconsumption_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
+                    "b_Lroomsnumb", "b_Ldurablesexpenditure",
+                    "b_Ldietarydi_x_Lassetscon", "b_Lproductiv_x_Lassetscon",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\consumption_assets_assets_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(per_cap_consumption_Bayesmodel, nsamples = 100)
-pp_check(per_cap_consumption_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(consumption_assets_bayesmodel, ndraws = 100)
+pp_check(consumption_assets_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
-### House Value - Secondary Outcome
+### **House Value** - Secondary Outcome
 
 Load the **house value** model variables
 
 ```{r, include=FALSE}
 # run linear model again using the bayesian "brms" package
-per_cap_consumption_data <- gik_hh_main %>%
+dwelling_cost_data <- read_csv("gik_hh_main.csv") %>%
   select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
          treat_any, treat_GK, # treatment dummies
-         consumption_asinh, # Outcome variable
-         consumption_asinh_R1, # Baseline value of consumption_asinh, present in both rounds
-         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
-# view(per_cap_consumption_data)
+         selfcostdwell_asinh, # Outcome variable
+         selfcostdwell_asinh_R1, # Baseline value of selfcostdwell_asinh, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, Lroomsnumb, Ldurablesexpenditure)  # controls
 ```
 
 
-**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
+**house value**: This is the basic benchmarking model utilizing the default, uninformed priors
 
-```{r, include=FALSE, echo=FALSE}
-per_cap_consumption_Bayesmodel <-
-  brm(formula = consumption_asinh | weights(samp_wgt) ~
+```{r}
+dwelling_cost_bayesmodel <-
+  brm(formula = selfcostdwell_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
-        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        selfcostdwell_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure +
         (1 | block) + (1 | vid),
-     data = per_cap_consumption_data,
+     data = dwelling_cost_data,
      family = gaussian("identity"),
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
-     thin = 2,
-     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
-     cores = getOption("mc.cores", 1), #default set to 1 core
-     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\dwelling_cost_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_per_cap_consumption_Bayesmodel <- tidy(per_cap_consumption_Bayesmodel)
-#view(tidy_per_cap_consumption_Bayesmodel)
-write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_bayes.csv")
+tidy_dwelling_cost_bayesmodel <- tidy(dwelling_cost_bayesmodel)
+#view(tidy_dwelling_cost_bayesmodel)
+write_csv(tidy_dwelling_cost_bayesmodel, "uninformed_prior_outcomes\\dwelling_cost_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(per_cap_consumption_Bayesmodel)
+summary(dwelling_cost_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(per_cap_consumption_Bayesmodel)
-check_prior(per_cap_consumption_Bayesmodel)
+prior_summary(dwelling_cost_bayesmodel)
+check_prior(dwelling_cost_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "trace")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "dens")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "acf")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "areas") # need to work on this one
+# trace diagnostic plot
+mcmc_trace(dwelling_cost_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_selfcostdwell_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
+                    "b_Lroomsnumb", "b_Ldurablesexpenditure",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\dwelling_cost_trace.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+#density diagnostic plots
+mcmc_dens(dwelling_cost_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_selfcostdwell_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
+                    "b_Lroomsnumb", "b_Ldurablesexpenditure",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\dwelling_cost_dens.png", plot = last_plot(), width = 12, height = 5)
 
-# # combo is a good one but need to select specific variables using the pars command
-# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
-# 
-# # additional plots for diagnostics
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
-# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+mcmc_dens_overlay(dwelling_cost_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_selfcostdwell_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
+                    "b_Lroomsnumb", "b_Ldurablesexpenditure",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\dwelling_cost_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(dwelling_cost_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_selfcostdwell_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
+                    "b_Lroomsnumb", "b_Ldurablesexpenditure",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\dwelling_cost_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(per_cap_consumption_Bayesmodel, nsamples = 100)
-pp_check(per_cap_consumption_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(dwelling_cost_bayesmodel, ndraws = 100)
+pp_check(dwelling_cost_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
-### House Quality - Secondary Outcome
+### **house quality** - Secondary Outcome
 
 Load the **house quality** model variables
 
 ```{r, include=FALSE}
 # run linear model again using the bayesian "brms" package
-per_cap_consumption_data <- gik_hh_main %>%
+housing_quality_data <- read_csv("gik_hh_main.csv") %>%
   select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
          treat_any, treat_GK, # treatment dummies
-         consumption_asinh, # Outcome variable
-         consumption_asinh_R1, # Baseline value of consumption_asinh, present in both rounds
-         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
-# view(per_cap_consumption_data)
+         housing_quality, # Outcome variable
+         housing_quality_R1, # Baseline value of housing_quality, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio, Lroomsnumb)  # controls
 ```
 
 
-**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
+**house quality**: This is the basic benchmarking model utilizing the default, uninformed priors
 
-```{r, include=FALSE, echo=FALSE}
-per_cap_consumption_Bayesmodel <-
-  brm(formula = consumption_asinh | weights(samp_wgt) ~
+```{r}
+housing_quality_bayesmodel <-
+  brm(formula = housing_quality | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
-        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
+        housing_quality_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb +
         (1 | block) + (1 | vid),
-     data = per_cap_consumption_data,
+     data = housing_quality_data,
      family = gaussian("identity"),
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
-     thin = 2,
-     #control = list(adapt_delta = .95, max_treedepth = 10), #this is overkill
-     cores = getOption("mc.cores", 1), #default set to 1 core
-     save_pars = save_pars(all = TRUE)) # potentially allows for more post-processing functionality
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\housing_quality_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_per_cap_consumption_Bayesmodel <- tidy(per_cap_consumption_Bayesmodel)
-#view(tidy_per_cap_consumption_Bayesmodel)
-write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_bayes.csv")
+tidy_housing_quality_bayesmodel <- tidy(housing_quality_bayesmodel)
+#view(tidy_housing_quality_bayesmodel)
+write_csv(tidy_housing_quality_bayesmodel, "uninformed_prior_outcomes\\housing_quality_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(per_cap_consumption_Bayesmodel)
+summary(housing_quality_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(per_cap_consumption_Bayesmodel)
-check_prior(per_cap_consumption_Bayesmodel)
+prior_summary(housing_quality_bayesmodel)
+check_prior(housing_quality_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "trace")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "dens")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "acf")
-mcmc_plot(per_cap_consumption_Bayesmodel, type = "areas") # need to work on this one
+# trace diagnostic plot
+mcmc_trace(housing_quality_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_housing_quality_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", "b_Lroomsnumb",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\housing_quality_trace.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_plot(per_cap_consumption_Bayesmodel, pars = c("b_treat_any", "b_treat_GK"), type = "dens")
+#density diagnostic plots
+mcmc_dens(housing_quality_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_housing_quality_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", "b_Lroomsnumb",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\housing_quality_dens.png", plot = last_plot(), width = 12, height = 5)
 
-# # combo is a good one but need to select specific variables using the pars command
-# #mcmc_plot(per_cap_consumption_Bayesmodel, type = "combo") 
-# 
-# # additional plots for diagnostics
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "violin")
-# mcmc_plot(per_cap_consumption_Bayesmodel, highlight = 1, type = "trace_highlight")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_hist")
-# mcmc_plot(per_cap_consumption_Bayesmodel, type = "rank_overlay")
+mcmc_dens_overlay(housing_quality_bayesmodel,
+           pars = c("b_Intercept", "b_
+                    
+                    cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_housing_quality_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", "b_Lroomsnumb",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\housing_quality_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(housing_quality_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_housing_quality_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", "b_Lroomsnumb",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\housing_quality_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(per_cap_consumption_Bayesmodel, nsamples = 100)
-pp_check(per_cap_consumption_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(housing_quality_bayesmodel, ndraws = 100)
+pp_check(housing_quality_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
 ```
+
+
 
 

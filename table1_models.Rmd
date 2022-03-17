@@ -959,6 +959,8 @@ write_csv(productive_assets_Bayesmodel_4, "variable_outcomes\\productive_assets_
 
 Load the *Consumption Assets* variables
 ```{r, include=FALSE}
+
+
 # Set up the data
 consumption_assets_data <- gik_hh_data %>%
   select(hhid, round, vid, m0_district, block, eligible, samp_wgt,

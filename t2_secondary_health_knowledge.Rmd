@@ -1,0 +1,124 @@
+---
+title: "Table 2 - Health Knowledge"
+output: word_document
+date: '2022-03-16'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE, echo=FALSE}
+library(tidyverse)
+library(parallel)
+library(cmdstanr)
+library(brms)
+library(rstan)
+library(posterior)
+#library(magrittr)
+library(knitr)
+library(broom)
+library(broom.mixed)
+library(tidybayes)
+library(bayesplot)
+library(bayestestR)
+library(kableExtra)
+library(xtable)
+library(sjPlot)
+#library(texreg)
+library(tidymodels)
+library(estimatr)
+library(Hmisc)
+library(vip)
+library(car)
+library(sandwich)
+```
+
+Load the **health knowledge** model variables
+
+```{r, include=FALSE}
+# run linear model again using the bayesian "brms" package
+health_knowledge_data <- read_csv("gik_hh_main.csv") %>%
+  select(hhid, round, vid, block, eligible, samp_wgt, cost_deviation,
+         treat_any, treat_GK, # treatment dummies
+         health_knowledge, # Outcome variable
+         health_knowledge_R1, # Baseline value of health_knowledge, present in both rounds
+         Lhh_wealth_asinh, Lvill_eligible_ratio) # controls
+```
+
+
+**health knowledge**: This is the basic bechmarking model utilzing `brm()` default, uninformed priors
+
+```{r}
+health_knowledge_bayesmodel <-
+  brm(formula = health_knowledge | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        health_knowledge_R1 + 
+        Lhh_wealth_asinh + Lvill_eligible_ratio +
+        (1 | block) + (1 | vid),
+     data = health_knowledge_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\health_knowledge_bayes")
+```
+
+```{r, include=FALSE, echo=FALSE}
+tidy_health_knowledge_bayesmodel <- tidy(health_knowledge_bayesmodel)
+#view(tidy_health_knowledge_bayesmodel)
+write_csv(tidy_health_knowledge_bayesmodel, "uninformed_prior_outcomes\\health_knowledge_bayes.csv")
+```
+
+Model Summery
+```{r}
+summary(health_knowledge_bayesmodel)
+```
+
+Prior summery - how informative are priors
+```{r}
+prior_summary(health_knowledge_bayesmodel)
+check_prior(health_knowledge_bayesmodel)
+```
+
+Diagnostics
+```{r}
+# trace diagnostic plot
+mcmc_trace(health_knowledge_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_health_knowledge_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\health_knowledge_trace.png", plot = last_plot(), width = 12, height = 5)
+
+#density diagnostic plots
+mcmc_dens(health_knowledge_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_health_knowledge_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\health_knowledge_dens.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_dens_overlay(health_knowledge_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_health_knowledge_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\health_knowledge_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(health_knowledge_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_health_knowledge_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\health_knowledge_acf.png", plot = last_plot(), width = 12, height = 5)
+```
+
+posterior predictive checks
+```{r}
+pp_check(health_knowledge_bayesmodel, ndraws = 100)
+pp_check(health_knowledge_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
+```
