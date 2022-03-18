@@ -1,7 +1,7 @@
 ---
-title: "Benchmarking Models 2 - Uninformed Priors"
-author: "Allen Baumgardner-Zuzik"
-date: "February 1, 2022"
+title: "Benchmarking Models 3 - Informed Priors"
+Author: "Allen Baumgardner-Zuzik"
+date: 'March 18, 2022'
 output: html_document
 ---
 
@@ -13,7 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Performs a Bayesian calculation with uninformed priors to estimate model 2 of <paper>
 
-$$ Y_{icb2} = \alpha_{b} + \delta^{T} T_{c} + \delta^{GK} T^{GK}_c + \beta X_{icb1} + \rho Y_{icb1} +\gamma_{1} \tau_{c} +\epsilon_{icb2} $$
+$$
+Y_{icb2} = \alpha_{b} + \delta^{T} T_{c} + \delta^{GK} T^{GK}_c + \beta X_{icb1} + \rho Y_{icb1} +\gamma_{1} \tau_{c} +\epsilon_{icb2} $$
 
 ### Warnings (if applicable)
 
