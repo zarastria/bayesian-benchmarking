@@ -147,6 +147,27 @@ per_cap_consumption_Bayesmodel <-
 ```
 
 ```{r, include=FALSE, echo=FALSE}
+#dropped Lhh_wealth_asinh
+per_cap_consumption_Bayesmodel <-
+  brm(formula = consumption_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        consumption_asinh_R1 + Lvill_eligible_ratio + 
+        (1 | block) + (1 | vid),
+     data = per_cap_consumption_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4) #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     #save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     #file = "uninformed_prior_outcomes\\per_cap_consumption_Bayes")
+```
+
+```{r, include=FALSE, echo=FALSE}
 tidy_per_cap_consumption_Bayesmodel <- tidy(per_cap_consumption_Bayesmodel)
 #view(tidy_per_cap_consumption_Bayesmodel)
 write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_bayes.csv")
@@ -168,7 +189,7 @@ Diagnostics
 # trace diagnostic plot
 mcmc_trace(per_cap_consumption_Bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_treat_GK", "b_consumption_asinh_R1",
                     "b_Lvill_eligible_ratio", "sd_block__Intercept", 
                     "sd_vid__Intercept", "sigma"))
 ggsave("table_2_diagnostics\\per_cap_consumption_trace.png", plot = last_plot(), width = 12, height = 5)
@@ -177,14 +198,14 @@ ggsave("table_2_diagnostics\\per_cap_consumption_trace.png", plot = last_plot(),
 #density diagnostic plot
 mcmc_dens(per_cap_consumption_Bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_treat_GK", "b_consumption_asinh_R1",
                     "b_Lvill_eligible_ratio", "sd_block__Intercept", 
                     "sd_vid__Intercept", "sigma"))
 ggsave("table_2_diagnostics\\per_cap_consumption_dens.png", plot = last_plot(), width = 12, height = 5)
 
 mcmc_dens_overlay(per_cap_consumption_Bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_treat_GK", "b_consumption_asinh_R1",
                     "b_Lvill_eligible_ratio", "sd_block__Intercept", 
                     "sd_vid__Intercept", "sigma"))
 ggsave("table_2_diagnostics\\per_cap_consumption_overlay.png", plot = last_plot(), width = 12, height = 5)
@@ -193,7 +214,7 @@ ggsave("table_2_diagnostics\\per_cap_consumption_overlay.png", plot = last_plot(
 #acf (auto-correlation) diagnostic plot
 mcmc_acf(per_cap_consumption_Bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_treat_GK", "b_consumption_asinh_R1",
                     "b_Lvill_eligible_ratio", "sd_block__Intercept", 
                     "sd_vid__Intercept", "sigma"))
 ggsave("table_2_diagnostics\\per_cap_consumption_acf.png", plot = last_plot(), width = 12, height = 5)
@@ -944,6 +965,29 @@ consumption_assets_bayesmodel <-
 ```
 
 ```{r, include=FALSE, echo=FALSE}
+# #removed Lhh_wealth_asinh
+# consumption_assets_bayesmodel <-
+#   brm(formula = assetsconsumption_asinh | weights(samp_wgt) ~
+#         cost_deviation + treat_any + treat_GK +
+#         assetsconsumption_asinh_R1 + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure +
+#         Ldietarydi_x_Lassetscon + Lproductiv_x_Lassetscon +
+#         (1 | block) + (1 | vid),
+#      data = consumption_assets_data,
+#      family = gaussian("identity"),
+#      seed = 1272022,
+#      warmup = 1000,
+#      iter = 2000,
+#      thin = 1,
+#      control = list(adapt_delta = .95, max_treedepth = 10),
+#      #backend = "cmdstanr",
+#      cores = 4 #overrides default 1 core
+#      #threads = 3,need to get cmdstanr package working here
+#      #save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+#      #file = "uninformed_prior_outcomes\\consumption_assets_bayes"
+#      )
+```
+
+```{r, include=FALSE, echo=FALSE}
 tidy_consumption_assets_bayesmodel <- tidy(consumption_assets_bayesmodel)
 #view(tidy_consumption_assets_bayesmodel)
 write_csv(tidy_consumption_assets_bayesmodel, "uninformed_prior_outcomes\\consumption_assets_bayes.csv")
@@ -962,10 +1006,10 @@ check_prior(consumption_assets_bayesmodel)
 
 Diagnostics
 ```{r}
-# trace diagnostic plot
+# trace diagnostic plot . try same diagnostics but remove "b_Lhh_wealth_asinh"
 mcmc_trace(consumption_assets_bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
-                    "b_assetsconsumption_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
+                    "b_assetsconsumption_asinh_R1", , "b_Lvill_eligible_ratio", 
                     "b_Lroomsnumb", "b_Ldurablesexpenditure",
                     "b_Ldietarydi_x_Lassetscon", "b_Lproductiv_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
@@ -1040,6 +1084,28 @@ dwelling_cost_bayesmodel <-
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
      file = "uninformed_prior_outcomes\\dwelling_cost_bayes")
+```
+
+```{r}
+#remove Lhh_wealth_asinh
+dwelling_cost_bayesmodel <-
+  brm(formula = selfcostdwell_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        selfcostdwell_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure +
+        (1 | block) + (1 | vid),
+     data = dwelling_cost_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     #save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     #file = "uninformed_prior_outcomes\\dwelling_cost_bayes"
+     )
 ```
 
 ```{r, include=FALSE, echo=FALSE}
