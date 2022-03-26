@@ -2,7 +2,7 @@
 title: "Benchmarking Models 3 - Informed Priors"
 Author: "Allen Baumgardner-Zuzik"
 date: 'March 18, 2022'
-output: html_document
+output: word_document
 ---
 
 ```{r setup, include=FALSE}
@@ -60,7 +60,7 @@ Set global core settings, if applicable. Use global setting only if necessary, b
 
 ## The models - table 3
 
-These models build out table 3 which presents the results for the primary and secondary outcomes utilizing informed priors with 1. normal distributions and 2. Cauchy distributions.We follow the advice of Racheal Meager and incorporate disagreement in the literature and use 6 standard deviations and a mean = 0
+These models build out table 3 which presents the results for the primary and secondary outcomes utilizing informed priors with 1. normal distributions and 2. Cauchy distributions.We follow the advice of Rachael Meager and incorporate disagreement in the literature and use 6 standard deviations and a mean = 0
 
 ### **Per Capita Monthly Consumption** - Primary Outcome
  
@@ -79,17 +79,17 @@ per_cap_consumption_data <- read_csv("gik_hh_main.csv") %>%
 
 #### *Normal Distribution* 
 
-**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
+**per capita consumption**: This is the basic benchmarking model utilizing the a global normal distribution with mean = 0 and 6 standard deviations.
 
 ```{r, include=FALSE, echo=FALSE}
-per_cap_consumption_Bayesmodel <-
+per_cap_consumption_normal_bayesmodel <-
   brm(formula = consumption_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
         consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
         (1 | block) + (1 | vid),
      data = per_cap_consumption_data,
      family = gaussian("identity"),
-     set_prior("normal(0,6)", class = "b", coef = "treat_GK"), 
+     set_prior("normal(0,6)", class = "b"), 
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
@@ -99,30 +99,31 @@ per_cap_consumption_Bayesmodel <-
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "informed_prior_outcomes\\per_cap_consumption_normal_Bayes")
+     file = "informed_prior_outcomes\\per_cap_consumption_normal_bayes")
 ```
+
 
 ```{r, include=FALSE, echo=FALSE}
 # tidy_per_cap_consumption_Bayesmodel <- tidy(per_cap_consumption_Bayesmodel)
 # #view(tidy_per_cap_consumption_Bayesmodel)
-# write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_bayes.csv")
+# write_csv(tidy_per_cap_consumption_Bayesmodel, "uninformed_prior_outcomes\\per_cap_consumption_normal_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(per_cap_consumption_Bayesmodel)
+summary(per_cap_consumption_normal_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(per_cap_consumption_Bayesmodel)
-check_prior(per_cap_consumption_Bayesmodel)
+prior_summary(per_cap_consumption_normal_bayesmodel)
+check_prior(per_cap_consumption_normal_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
 # trace diagnostic plot
-mcmc_trace(per_cap_consumption_Bayesmodel, n_warmup = 0,
+mcmc_trace(per_cap_consumption_normal_bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
                     "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
                     "b_Lvill_eligible_ratio", "sd_block__Intercept", 
@@ -131,23 +132,26 @@ ggsave("table_3_diagnostics\\per_cap_consumption_norm_trace.png", plot = last_pl
 
 
 #density diagnostic plot
-mcmc_dens(per_cap_consumption_Bayesmodel,
+mcmc_dens(per_cap_consumption_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
                     "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
                     "b_Lvill_eligible_ratio", "sd_block__Intercept", 
                     "sd_vid__Intercept", "sigma"))
 ggsave("table_3_diagnostics\\per_cap_consumption_norm_dens.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_dens_overlay(per_cap_consumption_Bayesmodel,
+mcmc_dens_overlay(per_cap_consumption_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
                     "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
                     "b_Lvill_eligible_ratio", "sd_block__Intercept", 
                     "sd_vid__Intercept", "sigma"))
 ggsave("table_3_diagnostics\\per_cap_consumption_norm_overlay.png", plot = last_plot(), width = 12, height = 5)
 
+mcmc_dens(per_cap_consumption_normal_bayesmodel,pars = c("b_treat_GK"))
+mcmc_dens_overlay(per_cap_consumption_normal_bayesmodel,pars = c("b_treat_GK"))
+
 
 #acf (auto-correlation) diagnostic plot
-mcmc_acf(per_cap_consumption_Bayesmodel,
+mcmc_acf(per_cap_consumption_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
                     "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
                     "b_Lvill_eligible_ratio", "sd_block__Intercept", 
@@ -157,154 +161,9 @@ ggsave("table_3_diagnostics\\per_cap_consumption_norm_acf.png", plot = last_plot
 
 posterior predictive checks
 ```{r}
-pp_check(per_cap_consumption_Bayesmodel, nsamples = 100)
-pp_check(per_cap_consumption_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(per_cap_consumption_normal_bayesmodel, nsamples = 100)
+pp_check(per_cap_consumption_normal_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
 ```
-
-#### *Cauchy Distributions*
-
-**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
-
-```{r, include=FALSE, echo=FALSE}
-per_cap_consumption_Bayesmodel <-
-  brm(formula = consumption_asinh | weights(samp_wgt) ~
-        cost_deviation + treat_any + treat_GK +
-        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
-        (1 | block) + (1 | vid),
-     data = per_cap_consumption_data,
-     family = gaussian("identity"),
-     set_prior("cauchy(0,6)", class = "b", coef = "treat_GK"), 
-     seed = 1272022,
-     warmup = 1000,
-     iter = 2000,
-     thin = 1,
-     control = list(adapt_delta = .95, max_treedepth = 10),
-     #backend = "cmdstanr",
-     cores = 4, #overrides default 1 core
-     #threads = 3,need to get cmdstanr package working here
-     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "informed_prior_outcomes\\per_cap_consumption_cauchy_Bayes")
-```
-
-Model Summery
-```{r}
-summary(per_cap_consumption_Bayesmodel)
-```
-
-Prior summery - how informative are priors
-```{r}
-prior_summary(per_cap_consumption_Bayesmodel)
-check_prior(per_cap_consumption_Bayesmodel)
-```
-
-Diagnostics
-```{r}
-# trace diagnostic plot
-mcmc_trace(per_cap_consumption_Bayesmodel, n_warmup = 0,
-           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
-                    "b_Lvill_eligible_ratio", "sd_block__Intercept", 
-                    "sd_vid__Intercept", "sigma"))
-ggsave("table_3_diagnostics\\per_cap_consumption_cauchytrace.png", plot = last_plot(), width = 12, height = 5)
-
-
-#density diagnostic plot
-mcmc_dens(per_cap_consumption_Bayesmodel,
-           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
-                    "b_Lvill_eligible_ratio", "sd_block__Intercept", 
-                    "sd_vid__Intercept", "sigma"))
-ggsave("table_3_diagnostics\\per_cap_consumption_cauchy_dens.png", plot = last_plot(), width = 12, height = 5)
-
-mcmc_dens_overlay(per_cap_consumption_Bayesmodel,
-           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
-                    "b_Lvill_eligible_ratio", "sd_block__Intercept", 
-                    "sd_vid__Intercept", "sigma"))
-ggsave("table_3_diagnostics\\per_cap_consumption_cauchy_overlay.png", plot = last_plot(), width = 12, height = 5)
-
-
-#acf (auto-correlation) diagnostic plot
-mcmc_acf(per_cap_consumption_Bayesmodel,
-           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
-                    "b_Lvill_eligible_ratio", "sd_block__Intercept", 
-                    "sd_vid__Intercept", "sigma"))
-ggsave("table_3_diagnostics\\per_cap_consumption_cauchy_acf.png", plot = last_plot(), width = 12, height = 5)
-```
-
-#### *Student-t Distribution*
-
-**per capita consumption**: This is the basic bechmarking model utilzing the default, uninformed priors
-
-```{r, include=FALSE, echo=FALSE}
-per_cap_consumption_Bayesmodel <-
-  brm(formula = consumption_asinh | weights(samp_wgt) ~
-        cost_deviation + treat_any + treat_GK +
-        consumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
-        (1 | block) + (1 | vid),
-     data = per_cap_consumption_data,
-     family = gaussian("identity"),
-     set_prior("cauchy(0,6)", class = "b", coef = "treat_GK"), 
-     seed = 1272022,
-     warmup = 1000,
-     iter = 2000,
-     thin = 1,
-     control = list(adapt_delta = .95, max_treedepth = 10),
-     #backend = "cmdstanr",
-     cores = 4, #overrides default 1 core
-     #threads = 3,need to get cmdstanr package working here
-     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "informed_prior_outcomes\\per_cap_consumption_cauchy_Bayes")
-```
-
-Model Summery
-```{r}
-summary(per_cap_consumption_Bayesmodel)
-```
-
-Prior summery - how informative are priors
-```{r}
-prior_summary(per_cap_consumption_Bayesmodel)
-check_prior(per_cap_consumption_Bayesmodel)
-```
-
-Diagnostics
-```{r}
-# trace diagnostic plot
-mcmc_trace(per_cap_consumption_Bayesmodel, n_warmup = 0,
-           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
-                    "b_Lvill_eligible_ratio", "sd_block__Intercept", 
-                    "sd_vid__Intercept", "sigma"))
-ggsave("table_3_diagnostics\\per_cap_consumption_cauchytrace.png", plot = last_plot(), width = 12, height = 5)
-
-
-#density diagnostic plot
-mcmc_dens(per_cap_consumption_Bayesmodel,
-           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
-                    "b_Lvill_eligible_ratio", "sd_block__Intercept", 
-                    "sd_vid__Intercept", "sigma"))
-ggsave("table_3_diagnostics\\per_cap_consumption_cauchy_dens.png", plot = last_plot(), width = 12, height = 5)
-
-mcmc_dens_overlay(per_cap_consumption_Bayesmodel,
-           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
-                    "b_Lvill_eligible_ratio", "sd_block__Intercept", 
-                    "sd_vid__Intercept", "sigma"))
-ggsave("table_3_diagnostics\\per_cap_consumption_cauchy_overlay.png", plot = last_plot(), width = 12, height = 5)
-
-
-#acf (auto-correlation) diagnostic plot
-mcmc_acf(per_cap_consumption_Bayesmodel,
-           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_consumption_asinh_R1", "b_Lhh_wealth_asinh",
-                    "b_Lvill_eligible_ratio", "sd_block__Intercept", 
-                    "sd_vid__Intercept", "sigma"))
-ggsave("table_3_diagnostics\\per_cap_consumption_cauchy_acf.png", plot = last_plot(), width = 12, height = 5)
-```
-
 
 
 ### **Dietary Diversity** - Primary Outcome
@@ -324,7 +183,7 @@ dietary_diversity_data <- read_csv("gik_hh_main.csv") %>%
 **Dietary Diversity:** This is the basic bechmarking model utilizing the default, uninformed priors
 
 ```{r}
-dietary_diversity_Bayesmodel <- 
+dietary_diversity_normal_bayesmodel <- 
   brm(formula = dietarydiversity | weights(samp_wgt) ~ 
         cost_deviation + treat_any + treat_GK + 
         dietarydiversity_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lsavingsstock_asinh3 + 
@@ -332,6 +191,7 @@ dietary_diversity_Bayesmodel <-
         (1 | vid) + (1 | block),
      data = dietary_diversity_data,
      family = gaussian("identity"),
+     set_prior("normal(0,6)", class = "b"),
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
@@ -341,75 +201,74 @@ dietary_diversity_Bayesmodel <-
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "uninformed_prior_outcomes\\dietary_diversity_Bayes")
+     file = "informed_prior_outcomes\\dietary_diversity_normal_bayes")
 ```
 
 ```{r}
-tidy_dietary_diversity_Bayesmodel <- tidy(dietary_diversity_Bayesmodel)
-#view(tidy_dietary_diversity_Bayesmodel)
-write_csv(tidy_dietary_diversity_Bayesmodel, "uninformed_prior_outcomes\\dietary_diversity_bayes.csv")
+# tidy_dietary_diversity_normal_bayesmodel <- tidy(dietary_diversity_normal_bayesmodel)
+# #view(tidy_dietary_diversity_normal_bayesmodel)
+# write_csv(tidy_dietary_diversity_normal_bayesmodel, "informed_prior_outcomes\\dietary_diversity_normal_bayes.csv")
 ```
 
 Model Summary
 ```{r}
-summary(dietary_diversity_Bayesmodel)
+summary(dietary_diversity_normal_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(dietary_diversity_Bayesmodel)
-check_prior(dietary_diversity_Bayesmodel)
+prior_summary(dietary_diversity_normal_bayesmodel)
+check_prior(dietary_diversity_normal_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
 # trace diagnostic plot
-mcmc_trace(dietary_diversity_Bayesmodel, n_warmup = 0,
+mcmc_trace(dietary_diversity_normal_bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
                     "b_treat_GK", "b_dietarydiversity_R1", "b_Lhh_wealth_asinh",
                     "b_Lvill_eligible_ratio", "b_Lsavingsstock_asinh3",
                     "b_Lconsumpti_x_Ldietarydi", "b_Lconsumpti_x_Lproductiv", 
                     "b_Ldietarydi_x_Lassetscon", "sd_block__Intercept", 
                     "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\dietary_div_trace.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\dietary_div_normal_trace.png", plot = last_plot(), width = 12, height = 5)
 
 #density diagnostic plot
-mcmc_dens(dietary_diversity_Bayesmodel,
+mcmc_dens(dietary_diversity_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
                     "b_treat_GK", "b_dietarydiversity_R1", "b_Lhh_wealth_asinh",
                     "b_Lvill_eligible_ratio", "b_Lsavingsstock_asinh3",
                     "b_Lconsumpti_x_Ldietarydi", "b_Lconsumpti_x_Lproductiv", 
                     "b_Ldietarydi_x_Lassetscon", "sd_block__Intercept", 
                     "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\dietary_div_dens.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\dietary_div_normal_dens.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_dens_overlay(dietary_diversity_Bayesmodel,
+mcmc_dens_overlay(dietary_diversity_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
                     "b_treat_GK", "b_dietarydiversity_R1", "b_Lhh_wealth_asinh",
                     "b_Lvill_eligible_ratio", "b_Lsavingsstock_asinh3",
                     "b_Lconsumpti_x_Ldietarydi", "b_Lconsumpti_x_Lproductiv", 
                     "b_Ldietarydi_x_Lassetscon", "sd_block__Intercept", 
                     "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\dietary_div_overlay.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\dietary_div_normal_overlay.png", plot = last_plot(), width = 12, height = 5)
 
 
 #acf (auto-correlation) diagnostic plot
-mcmc_acf(dietary_diversity_Bayesmodel,
+mcmc_acf(dietary_diversity_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
                     "b_treat_GK", "b_dietarydiversity_R1", "b_Lhh_wealth_asinh",
                     "b_Lvill_eligible_ratio", "b_Lsavingsstock_asinh3",
                     "b_Lconsumpti_x_Ldietarydi", "b_Lconsumpti_x_Lproductiv", 
                     "b_Ldietarydi_x_Lassetscon", "sd_block__Intercept", 
                     "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\dietary_div_acf.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\dietary_div_normal_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(dietary_diversity_Bayesmodel, nsamples = 100)
-pp_check(dietary_diversity_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(dietary_diversity_normal_bayesmodel, nsamples = 100)
+pp_check(dietary_diversity_normal_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
 ```
-
 
 
 ### **Total Household Wealth** - Primary Outcome
@@ -428,43 +287,44 @@ hh_wealth_data <- read_csv("gik_hh_main.csv") %>%
 ```
 
 
-**total household wealth**: This is the basic bechmarking model utilizing `brm()` default, uninformed priors
+**total household wealth**: This is the basic benchmarking model utilizing `brm()` default, uninformed priors. Removed Lhh_wealth_asinh to account for collinearity issues.
 
 ```{r}
-hh_wealth_Bayesmodel <-
+hh_wealth_normal_bayesmodel <-
   brm(formula = wealth_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
-        wealth_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lowndwelling +
+        wealth_asinh_R1 + Lvill_eligible_ratio + Lowndwelling +
         (1 | block) + (1 | vid),
      data = hh_wealth_data,
      family = gaussian("identity"),
+     set_prior("normal(0,6)", class = "b"),
      seed = 1272022,
-     warmup = 4000,
-     iter = 6000,
-     thin = 2,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
      control = list(adapt_delta = .99, max_treedepth = 10),
      #backend = "cmdstanr",
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "uninformed_prior_outcomes\\hh_wealth_Bayes")
+     file = "informed_prior_outcomes\\hh_wealth_normal_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_hh_wealth_Bayesmodel <- tidy(hh_wealth_Bayesmodel)
-#view(tidy_hh_wealth_Bayesmodel)
-write_csv(tidy_hh_wealth_Bayesmodel, "uninformed_prior_outcomes\\hh_wealth_Bayesmodel.csv")
+# tidy_hh_wealth_normal_bayesmodel <- tidy(hh_wealth_normal_bayesmodel)
+# #view(tidy_hh_wealth_normal_bayesmodel)
+# write_csv(tidy_hh_wealth_normal_bayesmodel, "informed_prior_outcomes\\hh_wealth_normal_bayesmodel.csv")
 ```
 
 Model Summery
 ```{r}
-summary(hh_wealth_Bayesmodel)
+summary(hh_wealth_normal_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(hh_wealth_Bayesmodel)
-check_prior(hh_wealth_Bayesmodel)
+prior_summary(hh_wealth_normal_bayesmodel)
+check_prior(hh_wealth_normal_bayesmodel)
 ```
 
 
@@ -491,42 +351,42 @@ check_prior(hh_wealth_Bayesmodel)
 Diagnostics
 ```{r}
 # trace diagnostic plot
-mcmc_trace(hh_wealth_Bayesmodel, n_warmup = 0,
+mcmc_trace(hh_wealth_normal_bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_treat_GK", "b_wealth_asinh_R1",
                     "b_Lvill_eligible_ratio", "b_Lowndwelling",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\hh_wealth_trace.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\hh_wealth_normal_trace.png", plot = last_plot(), width = 12, height = 5)
 
 #density diagnostic plot
-mcmc_dens(hh_wealth_Bayesmodel,
+mcmc_dens(hh_wealth_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_treat_GK", "b_wealth_asinh_R1",
                     "b_Lvill_eligible_ratio", "b_Lowndwelling",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\hh_wealth_dens.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\hh_wealth_normal_dens.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_dens_overlay(hh_wealth_Bayesmodel,
+mcmc_dens_overlay(hh_wealth_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_treat_GK", "b_wealth_asinh_R1",
                     "b_Lvill_eligible_ratio", "b_Lowndwelling",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\hh_wealth_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\hh_wealth_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
 
 
 #acf (auto-correlation) diagnostic plot
-mcmc_acf(hh_wealth_Bayesmodel,
+mcmc_acf(hh_wealth_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_treat_GK", "b_wealth_asinh_R1",
                     "b_Lvill_eligible_ratio", "b_Lowndwelling",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\hh_wealth_acf.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\hh_wealth_normal_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(hh_wealth_Bayesmodel, nsamples = 100)
-pp_check(hh_wealth_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(hh_wealth_normal_bayesmodel, nsamples = 100)
+pp_check(hh_wealth_normal_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
@@ -545,16 +405,17 @@ borrowing_stock_data <- read_csv("gik_hh_main.csv") %>%
 ```
 
 
-**borrowing stock**: This is the basic bechmarking model utilizing `brm()` default, uninformed priors
+**borrowing stock**: This is the basic benchmarking model utilizing `brm()` global weakly informed priors with mean = 0 and 6 standard deviations.
 
 ```{r}
-borrowing_stock_bayesmodel <-
+borrowing_stock_normal_bayesmodel <-
   brm(formula = borrowingstock_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
         borrowingstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
         (1 | block) + (1 | vid),
      data = borrowing_stock_data,
      family = gaussian("identity"),
+     set_prior("normal(0,6)", class = "b"),
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
@@ -564,59 +425,59 @@ borrowing_stock_bayesmodel <-
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "uninformed_prior_outcomes\\borrowing_stock_bayes")
+     file = "informed_prior_outcomes\\borrowing_stock_normal_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_borrowing_stock_bayesmodel <- tidy(borrowing_stock_bayesmodel)
-write_csv(tidy_borrowing_stock_bayesmodel, "uninformed_prior_outcomes\\borrowing_stock_bayes.csv")
+tidy_borrowing_stock_normal_bayesmodel <- tidy(borrowing_stock_normal_bayesmodel)
+write_csv(tidy_borrowing_stock_normal_bayesmodel, "uninformed_prior_outcomes\\borrowing_stock_normal_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(borrowing_stock_bayesmodel)
+summary(borrowing_stock_normal_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(borrowing_stock_bayesmodel)
-check_prior(borrowing_stock_bayesmodel)
+prior_summary(borrowing_stock_normal_bayesmodel)
+check_prior(borrowing_stock_normal_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
 # trace diagnostic plot
-mcmc_trace(borrowing_stock_bayesmodel, n_warmup = 0,
+mcmc_trace(borrowing_stock_normal_bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_borrowingstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\borrowing_stock_trace.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\borrowing_stock_normal_trace.png", plot = last_plot(), width = 12, height = 5)
 
 #density diagnostic plots
-mcmc_dens(borrowing_stock_bayesmodel,
+mcmc_dens(borrowing_stock_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_borrowingstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\borrowing_stock_dens.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\borrowing_stock_normal_dens.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_dens_overlay(borrowing_stock_bayesmodel,
+mcmc_dens_overlay(borrowing_stock_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_borrowingstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\borrowing_stock_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\borrowing_stock_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
 
 #acf (auto-correlation) diagnostic plot
-mcmc_acf(borrowing_stock_bayesmodel,
+mcmc_acf(borrowing_stock_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_borrowingstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\borrowing_stock_acf.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\borrowing_stock_normal_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(borrowing_stock_bayesmodel, nsamples = 100)
-pp_check(borrowing_stock_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(borrowing_stock_normal_bayesmodel, nsamples = 100)
+pp_check(borrowing_stock_normal_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
@@ -640,7 +501,7 @@ savings_stock_data <- read_csv("gik_hh_main.csv") %>%
 **savings stock**: This is the basic bechmarking model utilzing `brm()` default uninformed priors
 
 ```{r}
-savings_stock_bayesmodel <-
+savings_stock_normal_bayesmodel <-
   brm(formula = savingsstock_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
         savingsstock_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + 
@@ -648,6 +509,7 @@ savings_stock_bayesmodel <-
         (1 | block) + (1 | vid),
      data = savings_stock_data,
      family = gaussian("identity"),
+     set_prior("normal(0,6)", class = "b"),
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
@@ -657,64 +519,64 @@ savings_stock_bayesmodel <-
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "uninformed_prior_outcomes\\savings_stock_bayes")
+     file = "informed_prior_outcomes\\savings_stock_normal_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_savings_stock_bayesmodel <- tidy(savings_stock_bayesmodel)
-#view(tidy_savings_stock_bayesmodel)
-write_csv(tidy_savings_stock_bayesmodel, "uninformed_prior_outcomes\\savings_stock_bayes.csv")
+# tidy_savings_stock_normal_bayesmodel <- tidy(savings_stock_normal_bayesmodel)
+# #view(tidy_savings_stock_normal_bayesmodel)
+# write_csv(tidy_savings_stock_normal_bayesmodel, "informed_prior_outcomes\\savings_stock_normal_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(savings_stock_bayesmodel)
+summary(savings_stock_normal_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(savings_stock_bayesmodel)
-check_prior(savings_stock_bayesmodel)
+prior_summary(savings_stock_normal_bayesmodel)
+check_prior(savings_stock_normal_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
 # trace diagnostic plot
-mcmc_trace(savings_stock_bayesmodel, n_warmup = 0,
+mcmc_trace(savings_stock_normal_bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_savingsstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "b_Lconsumpti_x_Lproductiv", "b_Lconsumpti_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\savings_stock_trace.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\savings_stock_normal_trace.png", plot = last_plot(), width = 12, height = 5)
 
 #density diagnostic plots
-mcmc_dens(savings_stock_bayesmodel,
+mcmc_dens(savings_stock_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_savingsstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "b_Lconsumpti_x_Lproductiv", "b_Lconsumpti_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\savings_stock_dens.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\savings_stock_normal_dens.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_dens_overlay(savings_stock_bayesmodel,
+mcmc_dens_overlay(savings_stock_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_savingsstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "b_Lconsumpti_x_Lproductiv", "b_Lconsumpti_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\savings_stock_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\savings_stock_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
 
 #acf (auto-correlation) diagnostic plot
-mcmc_acf(savings_stock_bayesmodel,
+mcmc_acf(savings_stock_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_savingsstock_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "b_Lconsumpti_x_Lproductiv", "b_Lconsumpti_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\savings_stock_acf.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\savings_stock_normal_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(savings_stock_bayesmodel, nsamples = 100)
-pp_check(savings_stock_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(savings_stock_normal_bayesmodel, nsamples = 100)
+pp_check(savings_stock_normal_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
@@ -733,10 +595,10 @@ health_knowledge_data <- read_csv("gik_hh_main.csv") %>%
 ```
 
 
-**health knowledge**: This is the basic bechmarking model utilzing `brm()` default, uninformed priors
+**health knowledge**: This is the basic bechmarking model utilzing `brm()` a normal distribution. Try to increase to 2000 and 3000 total iterations. Check block intercept.
 
 ```{r}
-health_knowledge_bayesmodel <-
+health_knowledge_normal_bayesmodel <-
   brm(formula = health_knowledge | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
         health_knowledge_R1 + 
@@ -744,69 +606,70 @@ health_knowledge_bayesmodel <-
         (1 | block) + (1 | vid),
      data = health_knowledge_data,
      family = gaussian("identity"),
+     set_prior("normal(0,6)", class = "b"),
      seed = 1272022,
-     warmup = 1000,
-     iter = 2000,
+     warmup = 2000,
+     iter = 3000,
      thin = 1,
      control = list(adapt_delta = .95, max_treedepth = 10),
      #backend = "cmdstanr",
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "uninformed_prior_outcomes\\health_knowledge_bayes")
+     file = "informed_prior_outcomes\\health_knowledge_normal_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_health_knowledge_bayesmodel <- tidy(health_knowledge_bayesmodel)
-#view(tidy_health_knowledge_bayesmodel)
-write_csv(tidy_health_knowledge_bayesmodel, "uninformed_prior_outcomes\\health_knowledge_bayes.csv")
+# tidy_health_knowledge_normal_bayesmodel <- tidy(health_knowledge_normal_bayesmodel)
+# #view(tidy_health_knowledge_normal_bayesmodel)
+# write_csv(tidy_health_knowledge_normal_bayesmodel, "informed_prior_outcomes\\health_knowledge_normal_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(health_knowledge_bayesmodel)
+summary(health_knowledge_normal_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(health_knowledge_bayesmodel)
-check_prior(health_knowledge_bayesmodel)
+prior_summary(health_knowledge_normal_bayesmodel)
+check_prior(health_knowledge_normal_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
 # trace diagnostic plot
-mcmc_trace(health_knowledge_bayesmodel, n_warmup = 0,
+mcmc_trace(health_knowledge_normal_bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_health_knowledge_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\health_knowledge_trace.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\health_knowledge_normal_trace.png", plot = last_plot(), width = 12, height = 5)
 
 #density diagnostic plots
-mcmc_dens(health_knowledge_bayesmodel,
+mcmc_dens(health_knowledge_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_health_knowledge_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\health_knowledge_dens.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\health_knowledge_normal_dens.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_dens_overlay(health_knowledge_bayesmodel,
+mcmc_dens_overlay(health_knowledge_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_health_knowledge_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\health_knowledge_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\health_knowledge_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
 
 #acf (auto-correlation) diagnostic plot
-mcmc_acf(health_knowledge_bayesmodel,
+mcmc_acf(health_knowledge_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_health_knowledge_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\health_knowledge_acf.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\health_knowledge_normal_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(health_knowledge_bayesmodel, ndraws = 100)
-pp_check(health_knowledge_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(health_knowledge_normal_bayesmodel, ndraws = 100)
+pp_check(health_knowledge_normal_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
@@ -829,7 +692,7 @@ sanitation_practices_data <- read_csv("gik_hh_main.csv") %>%
 **sanitation practices**: This is the basic benchmarking model utilizing the default, uninformed priors
 
 ```{r}
-sanitation_practices_bayesmodel <-
+sanitation_practices_normal_bayesmodel <-
   brm(formula = sanitation_practices | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
         sanitation_practices_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
@@ -837,6 +700,7 @@ sanitation_practices_bayesmodel <-
         (1 | block) + (1 | vid),
      data = sanitation_practices_data,
      family = gaussian("identity"),
+     set_prior("normal(0,6)", class = "b"),
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
@@ -846,64 +710,64 @@ sanitation_practices_bayesmodel <-
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "uninformed_prior_outcomes\\sanitation_practices_bayes")
+     file = "informed_prior_outcomes\\sanitation_practices_normal_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_sanitation_practices_bayesmodel <- tidy(sanitation_practices_bayesmodel)
-#view(tidy_sanitation_practices_bayesmodel)
-write_csv(tidy_sanitation_practices_bayesmodel, "uninformed_prior_outcomes\\sanitation_practices_bayes.csv")
+# tidy_sanitation_practices_normal_bayesmodel <- tidy(sanitation_practices_normal_bayesmodel)
+# #view(tidy_sanitation_practices_normal_bayesmodel)
+# write_csv(tidy_sanitation_practices_normal_bayesmodel, "informed_prior_outcomes\\sanitation_practices_normal_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(sanitation_practices_bayesmodel)
+summary(sanitation_practices_normal_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(sanitation_practices_bayesmodel)
-check_prior(sanitation_practices_bayesmodel)
+prior_summary(sanitation_practices_normal_bayesmodel)
+check_prior(sanitation_practices_normal_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
 # trace diagnostic plot
-mcmc_trace(sanitation_practices_bayesmodel, n_warmup = 0,
+mcmc_trace(sanitation_practices_normal_bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_sanitation_practices_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "b_Lproductiv_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\sanitation_practices_trace.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\sanitation_practices_normal_trace.png", plot = last_plot(), width = 12, height = 5)
 
 #density diagnostic plots
-mcmc_dens(sanitation_practices_bayesmodel,
+mcmc_dens(sanitation_practices_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_sanitation_practices_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "b_Lproductiv_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\sanitation_practices_dens.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\sanitation_practices_normal_dens.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_dens_overlay(sanitation_practices_bayesmodel,
+mcmc_dens_overlay(sanitation_practices_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_sanitation_practices_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "b_Lproductiv_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\sanitation_practices_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\sanitation_practices_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
 
 #acf (auto-correlation) diagnostic plot
-mcmc_acf(sanitation_practices_bayesmodel,
+mcmc_acf(sanitation_practices_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_sanitation_practices_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "b_Lproductiv_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\sanitation_practices_acf.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\sanitation_practices_normal_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(sanitation_practices_bayesmodel, ndraws = 100)
-pp_check(sanitation_practices_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(sanitation_practices_normal_bayesmodel, ndraws = 100)
+pp_check(sanitation_practices_normal_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
@@ -927,7 +791,7 @@ productive_assets_data <- read_csv("gik_hh_main.csv") %>%
 **productive assets**: This is the basic benchmarking model utilizing the default, uninformed priors
 
 ```{r}
-productive_assets_bayesmodel <-
+productive_assets_normal_bayesmodel <-
   brm(formula = productiveassets_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
         productiveassets_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio +
@@ -935,6 +799,7 @@ productive_assets_bayesmodel <-
         (1 | block) + (1 | vid),
      data = productive_assets_data,
      family = gaussian("identity"),
+     set_prior("normal(0,6)", class = "b"),
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
@@ -944,64 +809,64 @@ productive_assets_bayesmodel <-
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "uninformed_prior_outcomes\\productive_assets_bayes")
+     file = "informed_prior_outcomes\\productive_assets_normal_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_productive_assets_bayesmodel <- tidy(productive_assets_bayesmodel)
-#view(tidy_productive_assets_bayesmodel)
-write_csv(tidy_productive_assets_bayesmodel, "uninformed_prior_outcomes\\productive_assets_bayes.csv")
+tidy_productive_assets_normal_bayesmodel <- tidy(productive_assets_normal_bayesmodel)
+#view(tidy_productive_assets_normal_bayesmodel)
+write_csv(tidy_productive_assets_normal_bayesmodel, "informed_prior_outcomes\\productive_assets_normal_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(productive_assets_bayesmodel)
+summary(productive_assets_normal_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(productive_assets_bayesmodel)
-check_prior(productive_assets_bayesmodel)
+prior_summary(productive_assets_normal_bayesmodel)
+check_prior(productive_assets_normal_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
 # trace diagnostic plot
-mcmc_trace(productive_assets_bayesmodel, n_warmup = 0,
+mcmc_trace(productive_assets_normal_bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_productiveassets_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "b_Lconsumpti_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\productive_assets_trace.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\productive_assets_normal_trace.png", plot = last_plot(), width = 12, height = 5)
 
 #density diagnostic plots
-mcmc_dens(productive_assets_bayesmodel,
+mcmc_dens(productive_assets_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_productiveassets_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "b_Lconsumpti_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\productive_assets_dens.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\productive_assets_normal_dens.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_dens_overlay(productive_assets_bayesmodel,
+mcmc_dens_overlay(productive_assets_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_productiveassets_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "b_Lconsumpti_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\productive_assets_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\productive_assets_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
 
 #acf (auto-correlation) diagnostic plot
-mcmc_acf(productive_assets_bayesmodel,
+mcmc_acf(productive_assets_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_productiveassets_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio",
                     "b_Lconsumpti_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\productive_assets_acf.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\productive_assets_normal_cf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(productive_assets_bayesmodel, ndraws = 100)
-pp_check(productive_assets_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(productive_assets_normal_bayesmodel, ndraws = 100)
+pp_check(productive_assets_normal_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
@@ -1020,10 +885,16 @@ consumption_assets_data <- read_csv("gik_hh_main.csv") %>%
          Ldietarydi_x_Lassetscon, Lproductiv_x_Lassetscon) # Interactions
 ```
 
-**consumption assets**: This is the basic benchmarking model utilizing the default, uninformed priors
+**consumption assets**: This is the basic benchmarking model utilizing a global normal prior with mean =  and 6 standard deviations. This model has a number of errors. Try increasing burn in to 15,000. Also, run a correlation matrix to see which LASSO variables are causing problems. remove one variable at a time.
+  
+* Warning: There were 4 chains where the estimated Bayesian Fraction of Missing Information was low. See https://mc-stan.org/misc/warnings.html#bfmi-low
+* Warning: Examine the pairs() plot to diagnose sampling problems
+* Warning: The largest R-hat is 4.48, indicating chains have not mixed. Running the chains for more iterations may help. See https://mc-stan.org/misc/warnings.html#r-hat
+* Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
+* Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable. https://mc-stan.org/misc/warnings.html#tail-ess
 
 ```{r}
-consumption_assets_bayesmodel <-
+consumption_assets_normal_bayesmodel <-
   brm(formula = assetsconsumption_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
         assetsconsumption_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure +
@@ -1031,6 +902,7 @@ consumption_assets_bayesmodel <-
         (1 | block) + (1 | vid),
      data = consumption_assets_data,
      family = gaussian("identity"),
+     set_prior("normal(0,6)", class = "b"),
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
@@ -1040,68 +912,68 @@ consumption_assets_bayesmodel <-
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "uninformed_prior_outcomes\\consumption_assets_bayes")
+     file = "informed_prior_outcomes\\consumption_assets_normal_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_consumption_assets_bayesmodel <- tidy(consumption_assets_bayesmodel)
-#view(tidy_consumption_assets_bayesmodel)
-write_csv(tidy_consumption_assets_bayesmodel, "uninformed_prior_outcomes\\consumption_assets_bayes.csv")
+# tidy_consumption_assets_normal_bayesmodel <- tidy(consumption_assets_normal_bayesmodel)
+# #view(tidy_consumption_assets_normal_bayesmodel)
+# write_csv(tidy_consumption_assets_normal_bayesmodel, "informed_prior_outcomes\\consumption_assets_normal_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(consumption_assets_bayesmodel)
+summary(consumption_assets_normal_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(consumption_assets_bayesmodel)
-check_prior(consumption_assets_bayesmodel)
+prior_summary(consumption_assets_normal_bayesmodel)
+check_prior(consumption_assets_normal_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
 # trace diagnostic plot
-mcmc_trace(consumption_assets_bayesmodel, n_warmup = 0,
+mcmc_trace(consumption_assets_normal_bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_assetsconsumption_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
                     "b_Lroomsnumb", "b_Ldurablesexpenditure",
                     "b_Ldietarydi_x_Lassetscon", "b_Lproductiv_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\consumption_assets_trace.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\consumption_assets_normal_race.png", plot = last_plot(), width = 12, height = 5)
 
 #density diagnostic plots
-mcmc_dens(consumption_assets_bayesmodel,
+mcmc_dens(consumption_assets_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_assetsconsumption_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
                     "b_Lroomsnumb", "b_Ldurablesexpenditure",
                     "b_Ldietarydi_x_Lassetscon", "b_Lproductiv_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\consumption_assets_dens.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\consumption_assets_normal_dens.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_dens_overlay(consumption_assets_bayesmodel,
+mcmc_dens_overlay(consumption_assets_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_assetsconsumption_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
                     "b_Lroomsnumb", "b_Ldurablesexpenditure",
                     "b_Ldietarydi_x_Lassetscon", "b_Lproductiv_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\consumption_assets_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\consumption_assets_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
 
 #acf (auto-correlation) diagnostic plot
-mcmc_acf(consumption_assets_bayesmodel,
+mcmc_acf(consumption_assets_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_assetsconsumption_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
                     "b_Lroomsnumb", "b_Ldurablesexpenditure",
                     "b_Ldietarydi_x_Lassetscon", "b_Lproductiv_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\consumption_assets_assets_acf.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\consumption_assets_normal_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(consumption_assets_bayesmodel, ndraws = 100)
-pp_check(consumption_assets_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(consumption_assets_normal_bayesmodel, ndraws = 100)
+pp_check(consumption_assets_normal_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
@@ -1120,16 +992,27 @@ dwelling_cost_data <- read_csv("gik_hh_main.csv") %>%
 ```
 
 
-**house value**: This is the basic benchmarking model utilizing the default, uninformed priors
+**house value**: This is the basic benchmarking model utilizing a prior normal distribution with mean = 0 and 6 standard deviations. This model had a number of errors and the posterior estimates are unreliable.
+
+* Warning: There were 2023 divergent transitions after warmup. See https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup to find out why this is a problem and how to eliminate them.
+* Warning: There were 1977 transitions after warmup that exceeded the maximum treedepth. Increase max_treedepth above 10. See
+https://mc-stan.org/misc/warnings.html#maximum-treedepth-exceeded
+* Warning: There were 4 chains where the estimated Bayesian Fraction of Missing Information was low. See
+https://mc-stan.org/misc/warnings.html#bfmi-low
+* Warning: Examine the pairs() plot to diagnose sampling problems
+* Warning: The largest R-hat is 4.46, indicating chains have not mixed. Running the chains for more iterations may help. See https://mc-stan.org/misc/warnings.html#r-hat
+* Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable. Running the chains for more iterations may help. See https://mc-stan.org/misc/warnings.html#bulk-ess
+* Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable. Running the chains for more iterations may help. See https://mc-stan.org/misc/warnings.html#tail-ess
 
 ```{r}
-dwelling_cost_bayesmodel <-
+dwelling_cost_normal_bayesmodel <-
   brm(formula = selfcostdwell_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
         selfcostdwell_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure +
         (1 | block) + (1 | vid),
      data = dwelling_cost_data,
      family = gaussian("identity"),
+     set_prior("normal(0,6)", class = "b"),
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
@@ -1139,64 +1022,110 @@ dwelling_cost_bayesmodel <-
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "uninformed_prior_outcomes\\dwelling_cost_bayes")
+     file = "informed_prior_outcomes\\dwelling_cost_normal_bayes")
 ```
 
+```{r}
+dwelling_cost_normal_bayesmodel <-
+  brm(formula = selfcostdwell_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        (1 | block) + (1 | vid),
+     data = dwelling_cost_data,
+     family = gaussian("identity"),
+     set_prior("normal(0,6)", class = "b"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
+     control = list(adapt_delta = .99, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4) #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     #save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     #file = "informed_prior_outcomes\\dwelling_cost_normal_bayes")
+```
+
+
 ```{r, include=FALSE, echo=FALSE}
-tidy_dwelling_cost_bayesmodel <- tidy(dwelling_cost_bayesmodel)
-#view(tidy_dwelling_cost_bayesmodel)
-write_csv(tidy_dwelling_cost_bayesmodel, "uninformed_prior_outcomes\\dwelling_cost_bayes.csv")
+# tidy_dwelling_cost_normal_bayesmodel <- tidy(dwelling_cost_normal_bayesmodel)
+# #view(tidy_dwelling_cost_normal_bayesmodel)
+# write_csv(tidy_dwelling_cost_normal_bayesmodel, "informed_prior_outcomes\\dwelling_cost_normal_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(dwelling_cost_bayesmodel)
+summary(dwelling_cost_normal_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(dwelling_cost_bayesmodel)
-check_prior(dwelling_cost_bayesmodel)
+prior_summary(dwelling_cost_normal_bayesmodel)
+check_prior(dwelling_cost_normal_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
 # trace diagnostic plot
-mcmc_trace(dwelling_cost_bayesmodel, n_warmup = 0,
+mcmc_trace(dwelling_cost_normal_bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_selfcostdwell_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
                     "b_Lroomsnumb", "b_Ldurablesexpenditure",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\dwelling_cost_trace.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\dwelling_cost_normal_trace.png", plot = last_plot(), width = 12, height = 5)
 
 #density diagnostic plots
-mcmc_dens(dwelling_cost_bayesmodel,
+mcmc_dens(dwelling_cost_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_selfcostdwell_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
                     "b_Lroomsnumb", "b_Ldurablesexpenditure",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\dwelling_cost_dens.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\dwelling_cost_normal_dens.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_dens_overlay(dwelling_cost_bayesmodel,
+mcmc_dens_overlay(dwelling_cost_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_selfcostdwell_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
                     "b_Lroomsnumb", "b_Ldurablesexpenditure",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\dwelling_cost_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\dwelling_cost_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
 
 #acf (auto-correlation) diagnostic plot
-mcmc_acf(dwelling_cost_bayesmodel,
+mcmc_acf(dwelling_cost_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_selfcostdwell_asinh_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", 
                     "b_Lroomsnumb", "b_Ldurablesexpenditure",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\dwelling_cost_acf.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\dwelling_cost_normal_acf.png", plot = last_plot(), width = 12, height = 5)
+```
+
+```{r}
+# trace diagnostic plot
+mcmc_trace(dwelling_cost_normal_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+#ggsave("table_3_diagnostics\\dwelling_cost_normal_trace.png", plot = last_plot(), width = 12, height = 5)
+
+#density diagnostic plots
+mcmc_dens(dwelling_cost_normal_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+#ggsave("table_3_diagnostics\\dwelling_cost_normal_dens.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_dens_overlay(dwelling_cost_normal_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+#ggsave("table_3_diagnostics\\dwelling_cost_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(dwelling_cost_normal_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+#ggsave("table_3_diagnostics\\dwelling_cost_normal_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(dwelling_cost_bayesmodel, ndraws = 100)
-pp_check(dwelling_cost_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(dwelling_cost_normal_bayesmodel, ndraws = 100)
+pp_check(dwelling_cost_normal_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
@@ -1218,13 +1147,14 @@ housing_quality_data <- read_csv("gik_hh_main.csv") %>%
 **house quality**: This is the basic benchmarking model utilizing the default, uninformed priors
 
 ```{r}
-housing_quality_bayesmodel <-
+housing_quality_normal_bayesmodel <-
   brm(formula = housing_quality | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
         housing_quality_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lroomsnumb +
         (1 | block) + (1 | vid),
      data = housing_quality_data,
      family = gaussian("identity"),
+     set_prior("normal(0,6)", class = "b"),
      seed = 1272022,
      warmup = 1000,
      iter = 2000,
@@ -1234,62 +1164,60 @@ housing_quality_bayesmodel <-
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "uninformed_prior_outcomes\\housing_quality_bayes")
+     file = "informed_prior_outcomes\\housing_quality_normal_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_housing_quality_bayesmodel <- tidy(housing_quality_bayesmodel)
-#view(tidy_housing_quality_bayesmodel)
-write_csv(tidy_housing_quality_bayesmodel, "uninformed_prior_outcomes\\housing_quality_bayes.csv")
+# tidy_housing_quality_normal_bayesmodel <- tidy(housing_quality_normal_bayesmodel)
+# #view(tidy_housing_quality_normal_bayesmodel)
+# write_csv(tidy_housing_quality_normal_bayesmodel, "informed_prior_outcomes\\housing_quality_normal_bayes.csv")
 ```
 
 Model Summery
 ```{r}
-summary(housing_quality_bayesmodel)
+summary(housing_quality_normal_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(housing_quality_bayesmodel)
-check_prior(housing_quality_bayesmodel)
+prior_summary(housing_quality_normal_bayesmodel)
+check_prior(housing_quality_normal_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
 # trace diagnostic plot
-mcmc_trace(housing_quality_bayesmodel, n_warmup = 0,
+mcmc_trace(housing_quality_normal_bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_housing_quality_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", "b_Lroomsnumb",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\housing_quality_trace.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\housing_quality_normal_trace.png", plot = last_plot(), width = 12, height = 5)
 
 #density diagnostic plots
-mcmc_dens(housing_quality_bayesmodel,
+mcmc_dens(housing_quality_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_housing_quality_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", "b_Lroomsnumb",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\housing_quality_dens.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\housing_quality_normal_dens.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_dens_overlay(housing_quality_bayesmodel,
-           pars = c("b_Intercept", "b_
-                    
-                    cost_deviation", "b_treat_any", "b_treat_GK",
+mcmc_dens_overlay(housing_quality_normal_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_housing_quality_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", "b_Lroomsnumb",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\housing_quality_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\housing_quality_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
 
 #acf (auto-correlation) diagnostic plot
-mcmc_acf(housing_quality_bayesmodel,
+mcmc_acf(housing_quality_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
                     "b_housing_quality_R1", "b_Lhh_wealth_asinh", "b_Lvill_eligible_ratio", "b_Lroomsnumb",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_2_diagnostics\\housing_quality_acf.png", plot = last_plot(), width = 12, height = 5)
+ggsave("table_3_diagnostics\\housing_quality_normal_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
 ```{r}
-pp_check(housing_quality_bayesmodel, ndraws = 100)
-pp_check(housing_quality_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(housing_quality_normal_bayesmodel, ndraws = 100)
+pp_check(housing_quality_normal_bayesmodel, ndraws = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 

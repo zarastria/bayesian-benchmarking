@@ -50,10 +50,11 @@ hh_wealth_data <- read_csv("gik_hh_main.csv") %>%
 ```
 
 
-**total household wealth**: This is the basic bechmarking model utilzing `brm()` default, uninformed priors
+**total household wealth**: This is the basic benchmarking model utilizing `brm()` default, uninformed priors
 
+household wealth model with Lhh_wealth_asinh. This model does not converge due to colinearity issues caused by the Lhh_wealth_asinh variable 
 ```{r}
-hh_wealth_Bayesmodel <-
+hh_wealth_bayesmodel_old <-
   brm(formula = wealth_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
         wealth_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lowndwelling +
@@ -69,56 +70,101 @@ hh_wealth_Bayesmodel <-
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "uninformed_prior_outcomes\\hh_wealth_Bayes")
+     file = "uninformed_prior_outcomes\\hh_wealth_bayes_old")
 ```
 
-```{r, include=FALSE, echo=FALSE}
-tidy_hh_wealth_Bayesmodel <- tidy(hh_wealth_Bayesmodel)
-#view(tidy_hh_wealth_Bayesmodel)
-write_csv(tidy_hh_wealth_Bayesmodel, "uninformed_prior_outcomes\\hh_wealth_Bayesmodel.csv")
-```
-
-Model Summery
 ```{r}
-summary(hh_wealth_Bayesmodel)
+hh_wealth_bayesmodel <-
+  brm(formula = wealth_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        wealth_asinh_R1 + Lvill_eligible_ratio + Lowndwelling +
+        (1 | block) + (1 | vid),
+     data = hh_wealth_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\hh_wealth_bayes")
+```
+
+Model Summaries
+```{r}
+summary(hh_wealth_bayesmodel_old)
+summary(hh_wealth_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(hh_wealth_Bayesmodel)
-check_prior(hh_wealth_Bayesmodel)
+prior_summary(hh_wealth_bayesmodel_old)
+check_prior(hh_wealth_bayesmodel_old)
+
+prior_summary(hh_wealth_bayesmodel)
+check_prior(hh_wealth_bayesmodel)
 ```
 
 Diagnostics
 ```{r}
 # trace diagnostic plot
-mcmc_trace(hh_wealth_Bayesmodel, n_warmup = 0,
+mcmc_trace(hh_wealth_bayesmodel_old, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
                     "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lowndwelling",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\hh_wealth_trace_old.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_trace(hh_wealth_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_wealth_asinh_R1",
                     "b_Lvill_eligible_ratio", "b_Lowndwelling",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
 ggsave("table_2_diagnostics\\hh_wealth_trace.png", plot = last_plot(), width = 12, height = 5)
 
 #density diagnostic plot
-mcmc_dens(hh_wealth_Bayesmodel,
+mcmc_dens(hh_wealth_bayesmodel_old,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
                     "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lowndwelling",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\hh_wealth_dens_old.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_dens(hh_wealth_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_wealth_asinh_R1",
                     "b_Lvill_eligible_ratio", "b_Lowndwelling",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
 ggsave("table_2_diagnostics\\hh_wealth_dens.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_dens_overlay(hh_wealth_Bayesmodel,
+mcmc_dens_overlay(hh_wealth_bayesmodel_old,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
                     "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
                     "b_Lvill_eligible_ratio", "b_Lowndwelling",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\hh_wealth_dens_overlay_old.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_dens_overlay(hh_wealth_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_wealth_asinh_R1",
+                    "b_Lvill_eligible_ratio", "b_Lowndwelling",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
 ggsave("table_2_diagnostics\\hh_wealth_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
 
-
 #acf (auto-correlation) diagnostic plot
-mcmc_acf(hh_wealth_Bayesmodel,
+mcmc_acf(hh_wealth_bayesmodel_old,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
                     "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_Lvill_eligible_ratio", "b_Lowndwelling",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+ggsave("table_2_diagnostics\\hh_wealth_acf_old.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_acf(hh_wealth_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
+                    "b_treat_GK", "b_wealth_asinh_R1",
                     "b_Lvill_eligible_ratio", "b_Lowndwelling",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
 ggsave("table_2_diagnostics\\hh_wealth_acf.png", plot = last_plot(), width = 12, height = 5)
@@ -126,6 +172,6 @@ ggsave("table_2_diagnostics\\hh_wealth_acf.png", plot = last_plot(), width = 12,
 
 posterior predictive checks
 ```{r}
-pp_check(hh_wealth_Bayesmodel, nsamples = 100)
-pp_check(hh_wealth_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(hh_wealth_bayesmodel, nsamples = 100)
+pp_check(hh_wealth_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
 ```

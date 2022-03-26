@@ -210,6 +210,8 @@ mcmc_dens_overlay(per_cap_consumption_Bayesmodel,
                     "sd_vid__Intercept", "sigma"))
 ggsave("table_2_diagnostics\\per_cap_consumption_overlay.png", plot = last_plot(), width = 12, height = 5)
 
+mcmc_dens(per_cap_consumption_Bayesmodel,pars = c("b_treat_GK"))
+mcmc_dens_overlay(per_cap_consumption_Bayesmodel,pars = c("b_treat_GK"))
 
 #acf (auto-correlation) diagnostic plot
 mcmc_acf(per_cap_consumption_Bayesmodel,
@@ -349,10 +351,10 @@ hh_wealth_data <- read_csv("gik_hh_main.csv") %>%
 ```
 
 
-**total household wealth**: This is the basic bechmarking model utilizing `brm()` default, uninformed priors
+**total household wealth**: This is the basic benchmark model utilizing `brm()` default, uninformed priors. This model has ESS errors and divergent chains. Consider removing Lhh_wealth_asinh due to perfect collinearity issues.
 
 ```{r}
-hh_wealth_Bayesmodel <-
+hh_wealth_bayesmodel_old <-
   brm(formula = wealth_asinh | weights(samp_wgt) ~
         cost_deviation + treat_any + treat_GK +
         wealth_asinh_R1 + Lhh_wealth_asinh + Lvill_eligible_ratio + Lowndwelling +
@@ -360,32 +362,54 @@ hh_wealth_Bayesmodel <-
      data = hh_wealth_data,
      family = gaussian("identity"),
      seed = 1272022,
-     warmup = 4000,
-     iter = 6000,
-     thin = 2,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
      control = list(adapt_delta = .99, max_treedepth = 10),
      #backend = "cmdstanr",
      cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
      save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     file = "uninformed_prior_outcomes\\hh_wealth_Bayes")
+     file = "uninformed_prior_outcomes\\hh_wealth_bayes_old")
+```
+
+**total household wealth**: This is the basic benchmark model utilizing `brm()` default, uninformed priors. This model does not include the Lhh_wealth_asinh variable and does not have the same issues that the previous model does. This should be considered the default.
+
+```{r}
+hh_wealth_bayesmodel <-
+  brm(formula = wealth_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        wealth_asinh_R1 + Lvill_eligible_ratio + Lowndwelling +
+        (1 | block) + (1 | vid),
+     data = hh_wealth_data,
+     family = gaussian("identity"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "uninformed_prior_outcomes\\hh_wealth_bayes")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-tidy_hh_wealth_Bayesmodel <- tidy(hh_wealth_Bayesmodel)
+tidy_hh_wealth_bayesmodel <- tidy(hh_wealth_bayesmodel)
 #view(tidy_hh_wealth_Bayesmodel)
-write_csv(tidy_hh_wealth_Bayesmodel, "uninformed_prior_outcomes\\hh_wealth_Bayesmodel.csv")
+write_csv(tidy_hh_wealth_bayesmodel, "uninformed_prior_outcomes\\hh_wealth_bayesmodel.csv")
 ```
 
 Model Summery
 ```{r}
-summary(hh_wealth_Bayesmodel)
+summary(hh_wealth_bayesmodel)
 ```
 
 Prior summery - how informative are priors
 ```{r}
-prior_summary(hh_wealth_Bayesmodel)
-check_prior(hh_wealth_Bayesmodel)
+prior_summary(hh_wealth_bayesmodel)
+check_prior(hh_wealth_bayesmodel)
 ```
 
 
@@ -412,33 +436,33 @@ check_prior(hh_wealth_Bayesmodel)
 Diagnostics
 ```{r}
 # trace diagnostic plot
-mcmc_trace(hh_wealth_Bayesmodel, n_warmup = 0,
+mcmc_trace(hh_wealth_bayesmodel, n_warmup = 0,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_treat_GK", "b_wealth_asinh_R1",
                     "b_Lvill_eligible_ratio", "b_Lowndwelling",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
 ggsave("table_2_diagnostics\\hh_wealth_trace.png", plot = last_plot(), width = 12, height = 5)
 
 #density diagnostic plot
-mcmc_dens(hh_wealth_Bayesmodel,
+mcmc_dens(hh_wealth_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_treat_GK", "b_wealth_asinh_R1",
                     "b_Lvill_eligible_ratio", "b_Lowndwelling",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
 ggsave("table_2_diagnostics\\hh_wealth_dens.png", plot = last_plot(), width = 12, height = 5)
 
-mcmc_dens_overlay(hh_wealth_Bayesmodel,
+mcmc_dens_overlay(hh_wealth_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_treat_GK", "b_wealth_asinh_R1",
                     "b_Lvill_eligible_ratio", "b_Lowndwelling",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
 ggsave("table_2_diagnostics\\hh_wealth_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
 
 
 #acf (auto-correlation) diagnostic plot
-mcmc_acf(hh_wealth_Bayesmodel,
+mcmc_acf(hh_wealth_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", 
-                    "b_treat_GK", "b_wealth_asinh_R1", "b_Lhh_wealth_asinh",
+                    "b_treat_GK", "b_wealth_asinh_R1",
                     "b_Lvill_eligible_ratio", "b_Lowndwelling",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
 ggsave("table_2_diagnostics\\hh_wealth_acf.png", plot = last_plot(), width = 12, height = 5)
@@ -446,8 +470,8 @@ ggsave("table_2_diagnostics\\hh_wealth_acf.png", plot = last_plot(), width = 12,
 
 posterior predictive checks
 ```{r}
-pp_check(hh_wealth_Bayesmodel, nsamples = 100)
-pp_check(hh_wealth_Bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
+pp_check(hh_wealth_bayesmodel, nsamples = 100)
+pp_check(hh_wealth_bayesmodel, nsamples = 10, type = 'error_scatter_avg', alpha = .1)
 ```
 
 
