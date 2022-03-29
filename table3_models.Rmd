@@ -883,7 +883,12 @@ consumption_assets_data <- read_csv("gik_hh_main.csv") %>%
          assetsconsumption_asinh_R1, # Baseline value of assetsconsumption_asinh, present in both rounds
          Lhh_wealth_asinh, Lvill_eligible_ratio, Lroomsnumb, Ldurablesexpenditure,  # controls
          Ldietarydi_x_Lassetscon, Lproductiv_x_Lassetscon) # Interactions
+view(consumption_assets_data)
+
+
+hist(consumption_assets_data$assetsconsumption_asinh)
 ```
+create a dummie variable = 0 if assets consumption = 0 and 1 if assets consumption > 0. distinguishes between the two groups
 
 **consumption assets**: This is the basic benchmarking model utilizing a global normal prior with mean =  and 6 standard deviations. This model has a number of errors. Try increasing burn in to 15,000. Also, run a correlation matrix to see which LASSO variables are causing problems. remove one variable at a time.
   
@@ -915,6 +920,112 @@ consumption_assets_normal_bayesmodel <-
      file = "informed_prior_outcomes\\consumption_assets_normal_bayes")
 ```
 
+remove baseline and controls to see if the model stabilizes
+
+```{r}
+consumption_assets_normal_bayesmodel <-
+  brm(formula = assetsconsumption_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        (1 | block) + (1 | vid),
+     data = consumption_assets_data,
+     family = gaussian("identity"),
+     set_prior("normal(0,6)", class = "b"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "informed_prior_outcomes\\consumption_assets_normal_bayes_v2")
+
+# trace diagnostic plot
+mcmc_trace(consumption_assets_normal_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+#ggsave("table_3_diagnostics\\consumption_assets_normal_race.png", plot = last_plot(), width = 12, height = 5)
+
+#density diagnostic plots
+mcmc_dens(consumption_assets_normal_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+#ggsave("table_3_diagnostics\\consumption_assets_normal_dens.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_dens_overlay(consumption_assets_normal_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+#ggsave("table_3_diagnostics\\consumption_assets_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(consumption_assets_normal_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+
+
+```
+
+correlation matrix
+```{r}
+cor_data <- consumption_assets_data %>%
+  select(assetsconsumption_asinh, cost_deviation, treat_any, treat_GK, Lhh_wealth_asinh,
+         Lvill_eligible_ratio, Lroomsnumb, Ldurablesexpenditure, block, vid)
+cor(cor_data)
+```
+```{r}
+consumption_assets_normal_bayesmodel <-
+  brm(formula = assetsconsumption_asinh | weights(samp_wgt) ~
+        cost_deviation + treat_any + treat_GK +
+        Lvill_eligible_ratio + Lroomsnumb + Ldurablesexpenditure +
+        (1 | block) + (1 | vid),
+     data = consumption_assets_data,
+     family = gaussian("identity"),
+     set_prior("normal(0,6)", class = "b"),
+     seed = 1272022,
+     warmup = 1000,
+     iter = 2000,
+     thin = 1,
+     control = list(adapt_delta = .95, max_treedepth = 10),
+     #backend = "cmdstanr",
+     cores = 4, #overrides default 1 core
+     #threads = 3,need to get cmdstanr package working here
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "informed_prior_outcomes\\consumption_assets_normal_bayes_v3")
+
+# trace diagnostic plot
+mcmc_trace(consumption_assets_normal_bayesmodel, n_warmup = 0,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_Lvill_eligible_ratio", 
+                    "b_Lroomsnumb", "b_Ldurablesexpenditure",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+#ggsave("table_3_diagnostics\\consumption_assets_normal_race.png", plot = last_plot(), width = 12, height = 5)
+
+#density diagnostic plots
+mcmc_dens(consumption_assets_normal_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_Lvill_eligible_ratio", 
+                    "b_Lroomsnumb", "b_Ldurablesexpenditure",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+#ggsave("table_3_diagnostics\\consumption_assets_normal_dens.png", plot = last_plot(), width = 12, height = 5)
+
+mcmc_dens_overlay(consumption_assets_normal_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_Lvill_eligible_ratio", 
+                    "b_Lroomsnumb", "b_Ldurablesexpenditure",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+#ggsave("table_3_diagnostics\\consumption_assets_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+
+#acf (auto-correlation) diagnostic plot
+mcmc_acf(consumption_assets_normal_bayesmodel,
+           pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
+                    "b_Lvill_eligible_ratio", 
+                    "b_Lroomsnumb", "b_Ldurablesexpenditure",
+                    "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
+#ggsave("table_3_diagnostics\\consumption_assets_normal_acf.png", plot = last_plot(), width = 12, height = 5)
+```
+
+
 ```{r, include=FALSE, echo=FALSE}
 # tidy_consumption_assets_normal_bayesmodel <- tidy(consumption_assets_normal_bayesmodel)
 # #view(tidy_consumption_assets_normal_bayesmodel)
@@ -941,7 +1052,7 @@ mcmc_trace(consumption_assets_normal_bayesmodel, n_warmup = 0,
                     "b_Lroomsnumb", "b_Ldurablesexpenditure",
                     "b_Ldietarydi_x_Lassetscon", "b_Lproductiv_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_3_diagnostics\\consumption_assets_normal_race.png", plot = last_plot(), width = 12, height = 5)
+#ggsave("table_3_diagnostics\\consumption_assets_normal_race.png", plot = last_plot(), width = 12, height = 5)
 
 #density diagnostic plots
 mcmc_dens(consumption_assets_normal_bayesmodel,
@@ -950,7 +1061,7 @@ mcmc_dens(consumption_assets_normal_bayesmodel,
                     "b_Lroomsnumb", "b_Ldurablesexpenditure",
                     "b_Ldietarydi_x_Lassetscon", "b_Lproductiv_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_3_diagnostics\\consumption_assets_normal_dens.png", plot = last_plot(), width = 12, height = 5)
+#ggsave("table_3_diagnostics\\consumption_assets_normal_dens.png", plot = last_plot(), width = 12, height = 5)
 
 mcmc_dens_overlay(consumption_assets_normal_bayesmodel,
            pars = c("b_Intercept", "b_cost_deviation", "b_treat_any", "b_treat_GK",
@@ -958,7 +1069,7 @@ mcmc_dens_overlay(consumption_assets_normal_bayesmodel,
                     "b_Lroomsnumb", "b_Ldurablesexpenditure",
                     "b_Ldietarydi_x_Lassetscon", "b_Lproductiv_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_3_diagnostics\\consumption_assets_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
+#ggsave("table_3_diagnostics\\consumption_assets_normal_dens_overlay.png", plot = last_plot(), width = 12, height = 5)
 
 #acf (auto-correlation) diagnostic plot
 mcmc_acf(consumption_assets_normal_bayesmodel,
@@ -967,7 +1078,7 @@ mcmc_acf(consumption_assets_normal_bayesmodel,
                     "b_Lroomsnumb", "b_Ldurablesexpenditure",
                     "b_Ldietarydi_x_Lassetscon", "b_Lproductiv_x_Lassetscon",
                     "sd_block__Intercept", "sd_vid__Intercept", "sigma"))
-ggsave("table_3_diagnostics\\consumption_assets_normal_acf.png", plot = last_plot(), width = 12, height = 5)
+#ggsave("table_3_diagnostics\\consumption_assets_normal_acf.png", plot = last_plot(), width = 12, height = 5)
 ```
 
 posterior predictive checks
@@ -1039,10 +1150,20 @@ dwelling_cost_normal_bayesmodel <-
      thin = 1,
      control = list(adapt_delta = .99, max_treedepth = 10),
      #backend = "cmdstanr",
-     cores = 4) #overrides default 1 core
+     cores = 4, #overrides default 1 core
      #threads = 3,need to get cmdstanr package working here
-     #save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
-     #file = "informed_prior_outcomes\\dwelling_cost_normal_bayes")
+     save_pars = save_pars(all = TRUE), # potentially allows for more post-processing functionality
+     file = "informed_prior_outcomes\\dwelling_cost_normal_bayes_v2")
+```
+
+```{r}
+cor_data <- dwelling_cost_data %>%
+  select(selfcostdwell_asinh, cost_deviation, treat_any, treat_GK, selfcostdwell_asinh_R1,
+         Lhh_wealth_asinh, Lvill_eligible_ratio, Lroomsnumb, Ldurablesexpenditure, block, vid)
+cor_data <- dwelling_cost_data %>%
+  select(selfcostdwell_asinh_R1, Lhh_wealth_asinh, Lvill_eligible_ratio, Lroomsnumb, Ldurablesexpenditure)
+
+cor(cor_data)
 ```
 
 
